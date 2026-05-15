@@ -654,7 +654,7 @@ Chart.defaults.color = '#7a6451';
 /* ===========================================================
    FONTE DE DADOS — Google Sheets
 =========================================================== */
-const SHEETS_URL = 'https://docs.google.com/spreadsheets/d/1YI34-JBfhbXQbGroq0eULKA4vYLIsyn_/pub?gid=1264987466&single=true&output=csv';
+const SHEETS_URL = 'https://docs.google.com/spreadsheets/d/1YI34-JBfhbXQbGroq0eULKA4vYLIsyn_/export?format=csv&gid=1264987466';
 
 async function fetchCSV() {
   const resp = await fetch(SHEETS_URL);
