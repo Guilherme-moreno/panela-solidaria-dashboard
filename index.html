@@ -657,7 +657,8 @@ Chart.defaults.color = '#7a6451';
 const SHEETS_URL = 'https://docs.google.com/spreadsheets/d/1YI34-JBfhbXQbGroq0eULKA4vYLIsyn_/export?format=csv&gid=1264987466';
 
 async function fetchCSV() {
-  const resp = await fetch(SHEETS_URL);
+  const url  = SHEETS_URL + '&_ts=' + Date.now();
+  const resp = await fetch(url, { cache: 'no-store' });
   if (!resp.ok) throw new Error('Não foi possível carregar a planilha (' + resp.status + ')');
   return resp.text();
 }
