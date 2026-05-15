@@ -371,6 +371,13 @@
         </div>
         <div class="topbar-right">
           <div class="meta-pill"><span class="dot"></span> Evento: <span id="event-date">—</span> · Pré-venda</div>
+          <div class="meta-pill" style="gap:6px">
+            <svg class="i" viewBox="0 0 24 24" style="opacity:.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <span id="last-update" style="font-size:11px">—</span>
+          </div>
+          <button id="btn-refresh" onclick="refreshFeijoada()" style="all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:7px;background:var(--green-700);color:#fff;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:600;font-family:inherit;transition:background .15s" onmouseover="this.style.background='var(--green-800)'" onmouseout="this.style.background='var(--green-700)'">
+            ↻ Atualizar
+          </button>
         </div>
       </div>
 
@@ -645,11 +652,13 @@ Chart.defaults.font.family = "Manrope, system-ui, sans-serif";
 Chart.defaults.color = '#7a6451';
 
 /* ===========================================================
-   CSV LOADING
+   FONTE DE DADOS — Google Sheets
 =========================================================== */
+const SHEETS_URL = 'https://docs.google.com/spreadsheets/d/1YI34-JBfhbXQbGroq0eULKA4vYLIsyn_/pub?gid=1264987466&single=true&output=csv';
+
 async function fetchCSV() {
-  const resp = await fetch('feijoada.csv');
-  if (!resp.ok) throw new Error('Arquivo feijoada.csv não encontrado');
+  const resp = await fetch(SHEETS_URL);
+  if (!resp.ok) throw new Error('Não foi possível carregar a planilha (' + resp.status + ')');
   return resp.text();
 }
 
@@ -707,7 +716,12 @@ function processData(rows) {
 /* ===========================================================
    RENDER FEIJOADA
 =========================================================== */
+let _chEvolucao = null;
+let _chDestino  = null;
+
 function renderFeijoada(eventTitle, d) {
+  if (_chEvolucao) { _chEvolucao.destroy(); _chEvolucao = null; }
+  if (_chDestino)  { _chDestino.destroy();  _chDestino  = null; }
   const { totalPratos, totalValor, pratosDoacao, pratosRetirada, pratosEntrega, byDate, dateKeys } = d;
 
   // Extrai data do título
@@ -731,7 +745,7 @@ function renderFeijoada(eventTitle, d) {
   document.getElementById('trend-retirada').textContent  = pct(pratosRetirada + pratosEntrega, totalPratos) + '% do total';
 
   // Gráfico de barras empilhadas
-  new Chart(document.getElementById('chEvolucao'), {
+  _chEvolucao = new Chart(document.getElementById('chEvolucao'), {
     type: 'bar',
     data: {
       labels: dateKeys.map(fmtDateLabel),
@@ -745,7 +759,7 @@ function renderFeijoada(eventTitle, d) {
   });
 
   // Gráfico de rosca
-  new Chart(document.getElementById('chDestino'), {
+  _chDestino = new Chart(document.getElementById('chDestino'), {
     type: 'doughnut',
     data: {
       labels: ['Doação', 'Retirada', 'Entrega'],
@@ -804,21 +818,36 @@ function renderFeijoada(eventTitle, d) {
 }
 
 /* ===========================================================
-   INIT FEIJOADA
+   INIT / REFRESH FEIJOADA
 =========================================================== */
 async function initFeijoada() {
+  const loading = document.getElementById('feijoada-loading');
+  const content = document.getElementById('feijoada-content');
+  loading.innerHTML = '<div class="spinner"></div> Carregando dados…';
+  loading.style.display = '';
+  content.style.display = 'none';
+
   try {
     const text = await fetchCSV();
     const { eventTitle, rows } = parseRows(text);
     const data = processData(rows);
     renderFeijoada(eventTitle, data);
+    document.getElementById('last-update').textContent = 'Atualizado às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   } catch (e) {
-    const el = document.getElementById('feijoada-loading');
-    el.innerHTML = '<div style="text-align:center;color:var(--red);padding:40px 20px">' +
+    loading.innerHTML = '<div style="text-align:center;color:var(--red);padding:40px 20px">' +
       'Erro ao carregar dados: ' + e.message + '.<br>' +
-      '<small style="color:var(--muted)">Verifique se <b>feijoada.csv</b> está na mesma pasta e abra via servidor web.</small>' +
+      '<small style="color:var(--muted)">Verifique se a planilha está <b>publicada na web</b> (Arquivo → Compartilhar → Publicar na web → CSV).</small>' +
       '</div>';
   }
+}
+
+async function refreshFeijoada() {
+  const btn = document.getElementById('btn-refresh');
+  btn.disabled = true;
+  btn.textContent = '↻ Atualizando…';
+  await initFeijoada();
+  btn.disabled = false;
+  btn.textContent = '↻ Atualizar';
 }
 
 /* ===========================================================
