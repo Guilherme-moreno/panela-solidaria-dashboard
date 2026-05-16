@@ -109,8 +109,6 @@ function FeijoadaContent({ data }) {
 
   const mediaDia = dateKeys.length ? totalValor / dateKeys.length : 0;
 
-  const pratosRetirarEntregar = pratosRetirada + pratosEntrega;
-
   const barData = dateKeys.map(dk => ({
     date: fmtDateLabel(dk),
     Doação: byDate[dk].doacao,
@@ -118,8 +116,9 @@ function FeijoadaContent({ data }) {
   }));
 
   const pieData = [
-    { name: 'Doação',             value: pratosDoacao,           fill: COLORS.Doação },
-    { name: 'Retirar / Entregar', value: pratosRetirarEntregar,  fill: COLORS.Retirada },
+    { name: 'Doação',   value: pratosDoacao,   fill: COLORS.Doação },
+    { name: 'Retirar',  value: pratosRetirada, fill: COLORS.Retirada },
+    { name: 'Entregar', value: pratosEntrega,  fill: COLORS.Entrega },
   ].filter(d => d.value > 0);
 
   return (
