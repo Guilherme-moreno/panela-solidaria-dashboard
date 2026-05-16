@@ -6,8 +6,10 @@ function processData(rows) {
   const totalPratos    = rows.reduce((s, r) => s + r.quantidade, 0);
   const totalValor     = rows.reduce((s, r) => s + r.valor, 0);
   const pratosDoacao   = rows.filter(r => r.tipo === 'Doação').reduce((s, r) => s + r.quantidade, 0);
-  const pratosRetirada = rows.filter(r => r.tipo === 'Retirada').reduce((s, r) => s + r.quantidade, 0);
-  const pratosEntrega  = rows.filter(r => r.tipo === 'Entrega').reduce((s, r) => s + r.quantidade, 0);
+  const pratosRetirada  = rows.filter(r => r.tipo === 'Retirada').reduce((s, r) => s + r.quantidade, 0);
+  const pratosEntrega   = rows.filter(r => r.tipo === 'Entrega').reduce((s, r) => s + r.quantidade, 0);
+  const pedidosRetirada = rows.filter(r => r.tipo === 'Retirada').length;
+  const pedidosEntrega  = rows.filter(r => r.tipo === 'Entrega').length;
 
   const byDate = {};
   rows.forEach(r => {
@@ -22,7 +24,7 @@ function processData(rows) {
   });
 
   const dateKeys = Object.keys(byDate).sort((a, b) => dateSortKey(a) - dateSortKey(b));
-  return { totalPratos, totalValor, pratosDoacao, pratosRetirada, pratosEntrega, byDate, dateKeys };
+  return { totalPratos, totalValor, pratosDoacao, pratosRetirada, pratosEntrega, pedidosRetirada, pedidosEntrega, byDate, dateKeys };
 }
 
 export function useFeijoadaData() {

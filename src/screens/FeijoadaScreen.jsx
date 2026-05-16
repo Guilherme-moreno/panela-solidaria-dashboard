@@ -105,7 +105,7 @@ export function FeijoadaScreen() {
 }
 
 function FeijoadaContent({ data }) {
-  const { totalPratos, totalValor, pratosDoacao, pratosRetirada, pratosEntrega, byDate, dateKeys } = data;
+  const { totalPratos, totalValor, pratosDoacao, pratosRetirada, pratosEntrega, pedidosRetirada, pedidosEntrega, byDate, dateKeys } = data;
 
   const mediaDia = dateKeys.length ? totalValor / dateKeys.length : 0;
 
@@ -151,7 +151,7 @@ function FeijoadaContent({ data }) {
         <div className="kpi">
           <div className="label">Para retirar / entregar</div>
           <div className="value">{fmtN(pratosRetirada + pratosEntrega)}<span className="unit">pratos</span></div>
-          <span className="trend flat">{pct(pratosRetirada + pratosEntrega, totalPratos)}% do total</span>
+          <span className="trend flat">{fmtN(pedidosRetirada + pedidosEntrega)} pedidos · {pct(pratosRetirada + pratosEntrega, totalPratos)}% do total</span>
         </div>
       </div>
 
