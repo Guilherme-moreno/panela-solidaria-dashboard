@@ -38,7 +38,7 @@ export function RestritoScreen() {
     return (
       <div className="login-wrap">
         <div className="login-card">
-          <div className="seal" style={{ backgroundImage: "url('/assets/logo-panela-solidaria.png')" }} />
+          <div className="seal" style={{ backgroundImage: "url('/assets/logo-panela-solidaria.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }} />
           <h2 className="serif">Área Restrita</h2>
           <p>Acesso reservado a dirigentes e coordenação da Panela Solidária.</p>
           <form onSubmit={handleLogin} noValidate>

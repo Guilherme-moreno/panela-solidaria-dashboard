@@ -39,7 +39,11 @@ export function useFeijoadaData() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    const interval = setInterval(load, 30 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [load]);
 
   return { ...state, reload: load };
 }

@@ -35,7 +35,7 @@ export function Sidebar({ isOpen, onClose, activeScreen, onNavigate, lockBadgeLa
     <aside className={`sidebar${isOpen ? ' open' : ''}`}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <div className="brand">
-          <div className="brand-mark" style={{ backgroundImage: "url('/assets/logo-panela-solidaria.png')" }} />
+          <div className="brand-mark" style={{ backgroundImage: "url('/assets/logo-panela-solidaria.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }} />
           <div className="brand-text">
             <span className="t1">Panela Solidária</span>
             <span className="t2">Aldeia Luz de Umbanda</span>

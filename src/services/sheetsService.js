@@ -1,7 +1,7 @@
 import Papa from 'papaparse';
 import { parseValor } from '../utils/formatters';
 
-const SHEETS_URL = 'https://docs.google.com/spreadsheets/d/1YI34-JBfhbXQbGroq0eULKA4vYLIsyn_/export?format=csv&gid=1264987466';
+const SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSkAt8JeuFvMilnNuUVf9EPZ82KJAPSqqbHl10GKSCSuD02TkkF5a8CRr2yYSD7Hg/pub?gid=1264987466&single=true&output=csv';
 
 export async function fetchFeijoadaCSV() {
   const url = SHEETS_URL + '&_ts=' + Date.now();

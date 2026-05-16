@@ -4,7 +4,7 @@ export function MobileHeader({ onOpenSidebar }) {
       <div className="brand" style={{ gap: 10 }}>
         <div
           className="brand-mark"
-          style={{ width: 36, height: 36, flex: '0 0 36px', backgroundImage: "url('/assets/logo-panela-solidaria.png')" }}
+          style={{ width: 36, height: 36, flex: '0 0 36px', backgroundImage: "url('/assets/logo-panela-solidaria.png')", backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }}
         />
         <div className="brand-text">
           <span className="t1" style={{ fontSize: 15 }}>Panela Solidária</span>
