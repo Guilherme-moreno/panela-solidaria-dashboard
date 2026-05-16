@@ -109,17 +109,17 @@ function FeijoadaContent({ data }) {
 
   const mediaDia = dateKeys.length ? totalValor / dateKeys.length : 0;
 
+  const pratosRetirarEntregar = pratosRetirada + pratosEntrega;
+
   const barData = dateKeys.map(dk => ({
     date: fmtDateLabel(dk),
     Doação: byDate[dk].doacao,
-    Retirada: byDate[dk].retirada,
-    Entrega: byDate[dk].entrega,
+    'Retirar/Entregar': byDate[dk].retirada + byDate[dk].entrega,
   }));
 
   const pieData = [
-    { name: 'Doação',   value: pratosDoacao,   fill: COLORS.Doação },
-    { name: 'Retirada', value: pratosRetirada, fill: COLORS.Retirada },
-    { name: 'Entrega',  value: pratosEntrega,  fill: COLORS.Entrega },
+    { name: 'Doação',             value: pratosDoacao,           fill: COLORS.Doação },
+    { name: 'Retirar / Entregar', value: pratosRetirarEntregar,  fill: COLORS.Retirada },
   ].filter(d => d.value > 0);
 
   return (
@@ -150,9 +150,6 @@ function FeijoadaContent({ data }) {
           <span className="trend flat">{pct(pratosDoacao, totalPratos)}% do total</span>
         </div>
         <div className="kpi">
-          <div className="ico-bg">
-            <svg className="i i-lg" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </div>
           <div className="label">Para retirar / entregar</div>
           <div className="value">{fmtN(pratosRetirada + pratosEntrega)}<span className="unit">pratos</span></div>
           <span className="trend flat">{pct(pratosRetirada + pratosEntrega, totalPratos)}% do total</span>
@@ -174,9 +171,8 @@ function FeijoadaContent({ data }) {
               <YAxis tick={{ fill: '#7a6451', fontSize: 11, fontFamily: 'Manrope' }} />
               <Tooltip content={<ChartTooltip />} />
               <Legend wrapperStyle={{ fontSize: 12, color: '#7a6451', fontFamily: 'Manrope', paddingTop: 8 }} />
-              <Bar dataKey="Doação"   stackId="a" fill={COLORS.Doação}   radius={[0,0,0,0]} />
-              <Bar dataKey="Retirada" stackId="a" fill={COLORS.Retirada} radius={[0,0,0,0]} />
-              <Bar dataKey="Entrega"  stackId="a" fill={COLORS.Entrega}  radius={[4,4,0,0]} />
+              <Bar dataKey="Doação"           stackId="a" fill={COLORS.Doação}   radius={[0,0,0,0]} />
+              <Bar dataKey="Retirar/Entregar" stackId="a" fill={COLORS.Retirada} radius={[4,4,0,0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
