@@ -1,9 +1,3 @@
-# Dependências
-node_modules/
-
-# Build
-dist/
-
 # Sistema
 Thumbs.db
 .DS_Store
@@ -12,7 +6,3 @@ desktop.ini
 # Editor
 .vscode/
 *.swp
-
-# Env
-.env
-.env.local
