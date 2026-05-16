@@ -37,8 +37,12 @@ export function FeijoadaScreen() {
 
   const eventDate = eventTitle?.match(/\d{2}\/\d{2}\/\d{4}/)?.[0] ?? '—';
   const updatedAt = lastUpdated
-    ? lastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    ? lastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     : '—';
+
+  const totalLinhas = data
+    ? Object.values(data.byDate).reduce((s, d) => s + d.total, 0)
+    : null;
 
   return (
     <div>
@@ -52,15 +56,29 @@ export function FeijoadaScreen() {
             <span className="dot" />
             Evento: {eventDate} · Pré-venda
           </div>
-          <div className="meta-pill" style={{ gap: 6 }}>
-            <svg className="i" viewBox="0 0 24 24" style={{ opacity: .5 }}>
-              <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
-            </svg>
-            <span style={{ fontSize: 11 }}>Atualizado às {updatedAt}</span>
+          <div className="meta-pill" style={{ gap: 6, flexDirection: 'column', alignItems: 'flex-start' }}>
+            <span style={{ fontSize: 11 }}>
+              <svg className="i" viewBox="0 0 24 24" style={{ opacity: .5, verticalAlign: 'middle', marginRight: 4 }}>
+                <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+              </svg>
+              Buscado às {updatedAt}
+            </span>
+            {totalLinhas !== null && (
+              <span style={{ fontSize: 10, opacity: .7 }}>
+                {loading ? '⟳ buscando...' : `${totalLinhas} pratos na planilha`}
+              </span>
+            )}
           </div>
           <RefreshBtn loading={loading} onClick={reload} />
         </div>
       </div>
+
+      {data && !loading && (
+        <div style={{ background: '#e3f0e6', border: '1px solid #b0d4ba', borderRadius: 8, padding: '6px 12px', fontSize: 12, color: '#1f5a35', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span>✓</span>
+          <span>Dados da planilha carregados às {updatedAt} · atualização automática a cada 30 min</span>
+        </div>
+      )}
 
       {loading && !data && (
         <div className="loading-state">

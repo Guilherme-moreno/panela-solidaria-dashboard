@@ -1,16 +1,33 @@
 import Papa from 'papaparse';
 import { parseValor } from '../utils/formatters';
 
-const SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSkAt8JeuFvMilnNuUVf9EPZ82KJAPSqqbHl10GKSCSuD02TkkF5a8CRr2yYSD7Hg/pub?gid=1264987466&single=true&output=csv';
+const SHEETS_BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSkAt8JeuFvMilnNuUVf9EPZ82KJAPSqqbHl10GKSCSuD02TkkF5a8CRr2yYSD7Hg/pub';
 
-export async function fetchFeijoadaCSV() {
-  const url = SHEETS_URL + '&_ts=' + Date.now();
-  const resp = await fetch(url, { cache: 'no-store' });
-  if (!resp.ok) throw new Error('Não foi possível carregar a planilha (' + resp.status + ')');
-  const text = await resp.text();
+function buildUrl() {
+  const bust = Date.now() + '_' + Math.random().toString(36).slice(2);
+  return `${SHEETS_BASE}?gid=1264987466&output=csv&cachebust=${bust}`;
+}
 
-  const { data: allRows } = Papa.parse(text, { skipEmptyLines: true });
+export function fetchFeijoadaCSV() {
+  return new Promise((resolve, reject) => {
+    Papa.parse(buildUrl(), {
+      download: true,
+      skipEmptyLines: true,
+      complete({ data: allRows }) {
+        try {
+          resolve(parseAllRows(allRows));
+        } catch (e) {
+          reject(e);
+        }
+      },
+      error(err) {
+        reject(new Error(err.message || 'Erro ao baixar planilha'));
+      },
+    });
+  });
+}
 
+function parseAllRows(allRows) {
   const eventTitle = (allRows[0]?.[0] ?? '').trim();
   const headerIdx  = allRows.findIndex(r => r[0]?.trim() === 'Data');
   const startIdx   = headerIdx >= 0 ? headerIdx + 1 : 3;
