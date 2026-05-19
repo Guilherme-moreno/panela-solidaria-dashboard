@@ -1,0 +1,16 @@
+# Sistema
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Editor
+.vscode/
+*.swp
+
+# Arquivos locais que não vão pro repositório
+uploads/
+feijoada.csv
+servidor.ps1
+
+# Claude Code
+.claude/
