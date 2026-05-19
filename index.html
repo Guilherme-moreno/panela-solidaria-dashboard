@@ -330,6 +330,28 @@
     padding:48px 20px;color:var(--muted);font-size:14px;text-align:center;
   }
   .empty-state svg{opacity:.25;width:38px;height:38px}
+
+  /* ---------- Financeiro Form ---------- */
+  .fin-form{display:flex;flex-direction:column;gap:0}
+  .fin-row{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;margin-bottom:14px}
+  .fin-desc-field{flex:2;min-width:160px}
+  .fin-form .field{display:flex;flex-direction:column;gap:6px;min-width:120px}
+  .fin-form .field label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .fin-form .field input{
+    padding:10px 12px;border-radius:8px;border:1px solid var(--line);
+    font-family:inherit;font-size:14px;background:var(--paper);color:var(--ink);
+    transition:border .15s,background .15s;width:100%
+  }
+  .fin-form .field input:focus{outline:none;border-color:var(--green-700);background:#fff;box-shadow:0 0 0 3px rgba(45,122,62,.12)}
+
+  .tipo-toggle{display:inline-flex;background:var(--paper-2);padding:3px;border-radius:8px;gap:2px}
+  .tipo-btn{all:unset;cursor:pointer;padding:7px 13px;font-size:13px;font-weight:600;border-radius:6px;color:var(--muted);transition:background .15s,color .15s}
+  .tipo-btn.on[data-tipo="Receita"]{background:var(--green-100);color:var(--green-700)}
+  .tipo-btn.on[data-tipo="Despesa"]{background:#fbecea;color:var(--red)}
+
+  .fin-feedback{margin-top:10px;font-size:13px;border-radius:8px;padding:8px 12px;display:none}
+  .fin-feedback.ok{display:block;background:var(--green-100);color:var(--green-700);border:1px solid #b8d9be}
+  .fin-feedback.err{display:block;background:#fbecea;color:var(--red);border:1px solid #f3c8c2}
 </style>
 </head>
 <body>
@@ -613,35 +635,106 @@
 
         <!-- Painel: Financeiro -->
         <div class="rpanel active" id="rpanel-financeiro">
+
+          <!-- KPIs dinâmicos -->
           <div class="restricted-grid">
             <div class="stat-pill">
-              <div class="lb">Receita bruta (2026)</div>
-              <div class="vl">—</div>
-              <div class="sb">Dados em breve</div>
+              <div class="lb">Total receitas</div>
+              <div class="vl" id="fin-kpi-receitas">R$ 0,00</div>
+              <div class="sb" id="fin-kpi-receitas-sub">0 lançamentos</div>
             </div>
             <div class="stat-pill">
-              <div class="lb">Custos de produção</div>
-              <div class="vl">—</div>
-              <div class="sb">Dados em breve</div>
+              <div class="lb">Total despesas</div>
+              <div class="vl" id="fin-kpi-despesas">R$ 0,00</div>
+              <div class="sb" id="fin-kpi-despesas-sub">0 lançamentos</div>
             </div>
             <div class="stat-pill">
-              <div class="lb">Resultado líquido</div>
-              <div class="vl">—</div>
-              <div class="sb">Dados em breve</div>
+              <div class="lb">Resultado</div>
+              <div class="vl" id="fin-kpi-resultado">R$ 0,00</div>
+              <div class="sb" id="fin-kpi-resultado-sub">Receitas − Despesas</div>
             </div>
           </div>
+
+          <!-- Formulário -->
           <div class="panel" style="margin-top:18px">
             <div class="panel-head">
               <div>
-                <h3>Lançamentos financeiros</h3>
-                <div class="sub">Receitas e despesas dos projetos</div>
+                <h3>Novo lançamento</h3>
+                <div class="sub">Preencha e clique em adicionar</div>
               </div>
             </div>
-            <div class="empty-state">
-              <svg class="i" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-              Conecte a planilha do Google Sheets para visualizar os lançamentos.
+            <form id="finForm" class="fin-form">
+              <div class="fin-row">
+                <div class="field">
+                  <label>Data</label>
+                  <input type="date" id="fin-data" required />
+                </div>
+                <div class="field fin-desc-field">
+                  <label>Descrição</label>
+                  <input type="text" id="fin-desc" placeholder="Ex: Compra de feijão" required />
+                </div>
+                <div class="field">
+                  <label>Tipo</label>
+                  <div class="tipo-toggle">
+                    <button type="button" class="tipo-btn on" data-tipo="Receita">↑ Receita</button>
+                    <button type="button" class="tipo-btn" data-tipo="Despesa">↓ Despesa</button>
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Valor (R$)</label>
+                  <input type="number" id="fin-valor" placeholder="0,00" min="0" step="0.01" required />
+                </div>
+              </div>
+              <div class="fin-row">
+                <div class="field" style="flex:1">
+                  <label>Observações <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px">(opcional)</span></label>
+                  <input type="text" id="fin-obs" placeholder="Ex: Pago via PIX" />
+                </div>
+                <div style="display:flex;align-items:flex-end">
+                  <button class="btn" type="submit" id="finSubmitBtn" style="width:auto;padding:11px 22px;white-space:nowrap">
+                    <svg class="i" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Adicionar lançamento
+                  </button>
+                </div>
+              </div>
+              <div class="fin-feedback" id="finFeedback"></div>
+            </form>
+          </div>
+
+          <!-- Tabela de lançamentos -->
+          <div class="panel" style="margin-top:18px">
+            <div class="panel-head">
+              <div>
+                <h3>Lançamentos</h3>
+                <div class="sub" id="fin-tbl-sub">Carregando…</div>
+              </div>
+              <div class="actions">
+                <button onclick="loadFinanceiro()" style="all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--green-700);padding:6px 10px;border-radius:8px;background:var(--green-100)" onmouseover="this.style.background='#c8e0cc'" onmouseout="this.style.background='var(--green-100)'">↻ Atualizar</button>
+              </div>
+            </div>
+            <div id="fin-tbl-loading" class="loading-state"><div class="spinner"></div> Carregando lançamentos…</div>
+            <div id="fin-tbl-wrap" style="display:none;overflow:auto;border-radius:10px;border:1px solid var(--line)">
+              <table class="tbl">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Descrição</th>
+                    <th>Tipo</th>
+                    <th class="num">Valor</th>
+                    <th>Observações</th>
+                  </tr>
+                </thead>
+                <tbody id="fin-tbody"></tbody>
+              </table>
+            </div>
+            <div id="fin-tbl-empty" style="display:none">
+              <div class="empty-state">
+                <svg class="i" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Nenhum lançamento ainda. Use o formulário acima para adicionar.
+              </div>
             </div>
           </div>
+
         </div>
 
         <!-- Painel: Membros -->
@@ -1024,6 +1117,7 @@ const FIREBASE_CONFIG = {
       restrictedView.style.display = 'block';
       lockBadge.textContent        = 'Ativo';
       whoamiEl.textContent         = email || '—';
+      finInit();
     } else {
       loginView.style.display      = '';
       restrictedView.style.display = 'none';
@@ -1109,6 +1203,160 @@ const FIREBASE_CONFIG = {
     });
   });
 })();
+
+/* ===========================================================
+   FINANCEIRO — Apps Script
+   → Cole aqui a URL do seu Web App (Apps Script → Implantar → Novo deploy)
+=========================================================== */
+const FIN_SCRIPT_URL = 'COLE_AQUI_URL_DO_APPS_SCRIPT';
+
+let _finTipo = 'Receita';
+
+document.querySelectorAll('.tipo-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tipo-btn').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    _finTipo = btn.dataset.tipo;
+  });
+});
+
+function finInit() {
+  const dataInput = document.getElementById('fin-data');
+  if (dataInput && !dataInput.value) {
+    dataInput.value = new Date().toISOString().split('T')[0];
+  }
+  loadFinanceiro();
+}
+
+async function loadFinanceiro() {
+  const loading = document.getElementById('fin-tbl-loading');
+  const wrap    = document.getElementById('fin-tbl-wrap');
+  const empty   = document.getElementById('fin-tbl-empty');
+  const sub     = document.getElementById('fin-tbl-sub');
+  if (!loading) return;
+
+  loading.style.display = '';
+  wrap.style.display    = 'none';
+  empty.style.display   = 'none';
+
+  if (FIN_SCRIPT_URL === 'COLE_AQUI_URL_DO_APPS_SCRIPT') {
+    loading.style.display = 'none';
+    empty.style.display   = '';
+    sub.textContent = 'Configure o Apps Script para carregar os dados';
+    updateFinKPIs([]);
+    return;
+  }
+
+  try {
+    const resp = await fetch(FIN_SCRIPT_URL, { cache: 'no-store' });
+    const json = await resp.json();
+    const rows = json.rows || [];
+
+    loading.style.display = 'none';
+    updateFinKPIs(rows);
+
+    if (rows.length === 0) {
+      empty.style.display = '';
+      sub.textContent = 'Nenhum lançamento ainda';
+    } else {
+      renderFinTable(rows);
+      wrap.style.display = '';
+      sub.textContent = rows.length + ' lançamento' + (rows.length !== 1 ? 's' : '');
+    }
+  } catch (e) {
+    loading.style.display = 'none';
+    empty.style.display   = '';
+    sub.textContent = 'Erro ao carregar dados';
+  }
+}
+
+function updateFinKPIs(rows) {
+  const receitas  = rows.filter(r => r['Tipo'] === 'Receita').reduce((s, r) => s + (parseFloat(r['Valor']) || 0), 0);
+  const despesas  = rows.filter(r => r['Tipo'] === 'Despesa').reduce((s, r) => s + (parseFloat(r['Valor']) || 0), 0);
+  const resultado = receitas - despesas;
+  const nRec = rows.filter(r => r['Tipo'] === 'Receita').length;
+  const nDes = rows.filter(r => r['Tipo'] === 'Despesa').length;
+
+  document.getElementById('fin-kpi-receitas').textContent     = fmtBR(receitas);
+  document.getElementById('fin-kpi-receitas-sub').textContent = nRec + ' lançamento' + (nRec !== 1 ? 's' : '');
+  document.getElementById('fin-kpi-despesas').textContent     = fmtBR(despesas);
+  document.getElementById('fin-kpi-despesas-sub').textContent = nDes + ' lançamento' + (nDes !== 1 ? 's' : '');
+
+  const resEl = document.getElementById('fin-kpi-resultado');
+  resEl.textContent = (resultado < 0 ? '−' : '') + fmtBR(Math.abs(resultado));
+  resEl.style.color = resultado >= 0 ? 'var(--gold-soft)' : '#e87b7b';
+  document.getElementById('fin-kpi-resultado-sub').textContent = resultado >= 0 ? '↑ Positivo' : '↓ Negativo';
+}
+
+function renderFinTable(rows) {
+  const tbody = document.getElementById('fin-tbody');
+  tbody.innerHTML = '';
+  [...rows].reverse().forEach(r => {
+    const tipo    = r['Tipo'] || '';
+    const valor   = parseFloat(r['Valor']) || 0;
+    const chipCls = tipo === 'Receita' ? 'green' : 'terra';
+    const parts   = (r['Data'] || '').toString().split('-');
+    const dataFmt = parts.length === 3 ? parts[2] + '/' + parts[1] + '/' + parts[0] : (r['Data'] || '—');
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td style="white-space:nowrap">' + dataFmt + '</td>' +
+      '<td class="strong">' + (r['Descrição'] || '—') + '</td>' +
+      '<td><span class="chip ' + chipCls + '">' + (tipo || '—') + '</span></td>' +
+      '<td class="num strong">' + fmtBR(valor) + '</td>' +
+      '<td style="color:var(--muted);font-size:13px">' + (r['Observações'] || '—') + '</td>';
+    tbody.appendChild(tr);
+  });
+}
+
+document.getElementById('finForm').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const feedback = document.getElementById('finFeedback');
+  const btn      = document.getElementById('finSubmitBtn');
+  feedback.className = 'fin-feedback';
+
+  if (FIN_SCRIPT_URL === 'COLE_AQUI_URL_DO_APPS_SCRIPT') {
+    feedback.textContent = 'Configure o Apps Script antes de adicionar lançamentos.';
+    feedback.className   = 'fin-feedback err';
+    return;
+  }
+
+  let userEmail = '';
+  try { userEmail = firebase.auth().currentUser.email; } catch (_) {}
+
+  const payload = {
+    data:      document.getElementById('fin-data').value,
+    descricao: document.getElementById('fin-desc').value.trim(),
+    tipo:      _finTipo,
+    valor:     parseFloat(document.getElementById('fin-valor').value) || 0,
+    obs:       document.getElementById('fin-obs').value.trim(),
+    usuario:   userEmail
+  };
+
+  btn.disabled    = true;
+  btn.textContent = 'Salvando…';
+
+  try {
+    await fetch(FIN_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'text/plain' }
+    });
+    feedback.textContent = '✓ Lançamento salvo com sucesso!';
+    feedback.className   = 'fin-feedback ok';
+    document.getElementById('fin-desc').value  = '';
+    document.getElementById('fin-valor').value = '';
+    document.getElementById('fin-obs').value   = '';
+    document.getElementById('fin-data').value  = new Date().toISOString().split('T')[0];
+    await loadFinanceiro();
+    setTimeout(() => { feedback.className = 'fin-feedback'; }, 4000);
+  } catch (e) {
+    feedback.textContent = 'Erro ao salvar. Verifique a conexão e tente novamente.';
+    feedback.className   = 'fin-feedback err';
+  } finally {
+    btn.disabled  = false;
+    btn.innerHTML = '<svg class="i" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Adicionar lançamento';
+  }
+});
 
 /* ===========================================================
    ABAS DA ÁREA RESTRITA
