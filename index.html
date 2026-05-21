@@ -1539,7 +1539,7 @@ function parseCSV(text) {
     if (!date) continue;
     if (/^\s*(saldo|total)\s*$/i.test(desc)) continue;
 
-    rows.push({ data: date, descricao: desc || 'Transação', tipo: valor > 0 ? 'Receita' : 'Despesa', valor: Math.abs(valor) });
+    rows.push({ data: date, descricao: desc || 'Transação', local: '', tipo: valor > 0 ? 'Receita' : 'Despesa', valor: Math.abs(valor) });
   }
   return rows;
 }
@@ -1570,7 +1570,7 @@ async function parsePDF(file) {
       const content = await page.getTextContent();
       const lineMap = new Map();
       for (const item of content.items) {
-        const y = Math.round(item.transform[5]);
+        const y = Math.round(item.transform[5] / 2) * 2;
         if (!lineMap.has(y)) lineMap.set(y, []);
         lineMap.get(y).push({ x: item.transform[4], str: item.str });
       }
@@ -1592,18 +1592,61 @@ async function parsePDF(file) {
 }
 
 function _parsePDFText(text) {
+  const SKIP = /saldo\s+(inicial|final|do\s+dia)|total\s+de\s+(entradas|sa[íi]das)|extrato\s+(do\s+per|gerado)|ouvidoria|cora\s+scfi|aldeia\s+luz|agência|p[áa]g\s+\d+\s+de\s+\d+|\d{2}\/\d{2}\/\d{4}\s+a\s+\d{2}\/\d{2}\/\d{4}/i;
+
+  const TIPOS = [
+    'Transf Pix recebida', 'Transf Pix enviada',
+    'Transferência recebida', 'Transferência enviada',
+    'Transferencia recebida', 'Transferencia enviada',
+    'Boleto pago',
+    'Pgto QR Code Pix',
+    'Compra no débito', 'Compra no credito', 'Compra no crédito',
+    'Saque', 'Depósito', 'Deposito', 'Tarifa',
+  ];
+
   const rows = [];
-  for (const line of text.split('\n')) {
-    const dateM = line.match(/(\d{2}\/\d{2}\/(?:\d{4}|\d{2}))/);
-    if (!dateM) continue;
-    const date = _normImportDate(dateM[1]);
-    if (!date) continue;
-    const valM = line.match(/([+-]?\s?\d{1,3}(?:[.,]\d{3})*[.,]\d{2})\s*$/);
-    if (!valM) continue;
-    const valor = _parseNumBR(valM[1].replace(/\s/g, ''));
+  let currentDate = '';
+
+  for (const rawLine of text.split('\n')) {
+    const line = rawLine.trim();
+    if (!line || SKIP.test(line)) continue;
+
+    // Date header: DD/MM/YYYY at the start of the line
+    const dateM = line.match(/^(\d{2}\/\d{2}\/\d{4})/);
+    if (dateM) { currentDate = _normImportDate(dateM[1]); continue; }
+
+    // Transaction line: must end with [+|-] R$ value
+    const valM = line.match(/([+-])\s*R\$\s*([\d.,]+)\s*$/i);
+    if (!valM || !currentDate) continue;
+
+    const valor = _parseNumBR(valM[2]);
     if (isNaN(valor) || valor === 0) continue;
-    let desc = line.slice(dateM.index + dateM[0].length, line.lastIndexOf(valM[1])).trim().replace(/\s+/g, ' ');
-    rows.push({ data: date, descricao: desc || 'Transação', tipo: valor > 0 ? 'Receita' : 'Despesa', valor: Math.abs(valor) });
+
+    // Strip value, CNPJ (XX.XXX.XXX/XXXX-XX), CPF (XXX.XXX.XXX-XX)
+    let rest = line.slice(0, line.lastIndexOf(valM[0])).trim();
+    rest = rest.replace(/\d{2,3}\.\d{3}\.\d{3}\/\d{4}-\d{2}/g, '').trim();
+    rest = rest.replace(/\d{3}\.\d{3}\.\d{3}-\d{2}/g, '').trim();
+    rest = rest.replace(/\s{2,}/g, ' ');
+
+    let tipoNome = '';
+    let localNome = '';
+    const restLow = rest.toLowerCase();
+    for (const t of TIPOS) {
+      if (restLow.startsWith(t.toLowerCase())) {
+        tipoNome  = t;
+        localNome = rest.slice(t.length).trim();
+        break;
+      }
+    }
+    if (!tipoNome) { tipoNome = rest; localNome = ''; }
+
+    rows.push({
+      data:      currentDate,
+      descricao: tipoNome || 'Transação',
+      local:     localNome,
+      tipo:      valM[1] === '+' ? 'Receita' : 'Despesa',
+      valor:     valor
+    });
   }
   return rows;
 }
@@ -1634,7 +1677,8 @@ function renderImportPreview(rows) {
     const tr = document.createElement('tr');
     tr.innerHTML =
       '<td style="white-space:nowrap;font-size:13px">' + _fmtDateBR(row.data) + '</td>' +
-      '<td><input class="import-cell-input" data-idx="' + idx + '" value="' + _escHtml(row.descricao) + '" /></td>' +
+      '<td><input class="import-cell-input imp-desc" data-idx="' + idx + '" value="' + _escHtml(row.descricao) + '" /></td>' +
+      '<td><input class="import-cell-input imp-local" data-idx="' + idx + '" value="' + _escHtml(row.local || '') + '" placeholder="—" /></td>' +
       '<td>' +
         '<div class="tipo-toggle" style="display:inline-flex">' +
           '<button type="button" class="tipo-btn imp-tipo' + (row.tipo === 'Receita' ? ' on' : '') + '" data-idx="' + idx + '" data-tipo="Receita">↑ Receita</button>' +
@@ -1653,8 +1697,11 @@ function renderImportPreview(rows) {
       btn.classList.add('on');
     });
   });
-  preview.querySelectorAll('.import-cell-input').forEach(input => {
+  preview.querySelectorAll('.imp-desc').forEach(input => {
     input.addEventListener('input', () => { _importRows[parseInt(input.dataset.idx)].descricao = input.value; });
+  });
+  preview.querySelectorAll('.imp-local').forEach(input => {
+    input.addEventListener('input', () => { _importRows[parseInt(input.dataset.idx)].local = input.value; });
   });
 }
 
@@ -1677,7 +1724,7 @@ async function submitImport() {
     try {
       await fetch(FIN_SCRIPT_URL, {
         method:  'POST',
-        body:    JSON.stringify({ data: row.data, descricao: row.descricao, tipo: row.tipo, valor: row.valor, obs: 'Importado via extrato', usuario: userEmail }),
+        body:    JSON.stringify({ data: row.data, descricao: row.descricao, tipo: row.tipo, valor: row.valor, obs: row.local || 'Importado via extrato', usuario: userEmail }),
         headers: { 'Content-Type': 'text/plain' }
       });
     } catch (_) { errors++; }
@@ -1746,11 +1793,12 @@ initFeijoada();
 
     <div id="importPreview" style="display:none">
       <div style="overflow:auto;max-height:300px;border-radius:10px;border:1px solid var(--line)">
-        <table class="tbl" style="min-width:560px">
+        <table class="tbl" style="min-width:700px">
           <thead>
             <tr>
               <th>Data</th>
-              <th>Descrição</th>
+              <th>Nome da Transação</th>
+              <th>Local</th>
               <th>Tipo</th>
               <th class="num">Valor</th>
             </tr>
