@@ -386,6 +386,84 @@
   .import-cell-input:hover,.import-cell-input:focus{
     border-color:var(--line);background:var(--paper);outline:none;
   }
+  .import-obs-input{
+    all:unset;padding:3px 6px;border-radius:6px;margin-top:4px;
+    border:1px solid transparent;font-family:inherit;font-size:11.5px;
+    color:var(--muted);background:transparent;transition:border .15s,background .15s;
+    box-sizing:border-box;width:100%;display:block;font-style:italic;
+  }
+  .import-obs-input:hover,.import-obs-input:focus{
+    border-color:var(--line);background:var(--paper);color:var(--ink);outline:none;font-style:normal;
+  }
+
+  /* ---------- Fin KPI Grid (5 pills gerenciais) ---------- */
+  .fin-kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:18px}
+  @media (max-width:1200px){.fin-kpi-grid{grid-template-columns:repeat(3,1fr)}}
+  @media (max-width:700px){.fin-kpi-grid{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:400px){.fin-kpi-grid{grid-template-columns:1fr}}
+
+  /* ---------- Categoria select ---------- */
+  .fin-cat-select{
+    padding:10px 12px;border-radius:8px;border:1px solid var(--line);
+    font-family:inherit;font-size:14px;background:var(--paper);color:var(--ink);
+    width:100%;-webkit-appearance:none;appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a6451' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;
+    transition:border .15s,background .15s;
+  }
+  .fin-cat-select:focus{outline:none;border-color:var(--green-700);background:#fff;box-shadow:0 0 0 3px rgba(45,122,62,.12)}
+  .fin-cat-other{margin-top:6px;display:none}
+  .fin-cat-other.show{display:block}
+
+  /* ---------- Date filter ---------- */
+  .fin-filter-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0 12px;border-bottom:1px solid var(--line);margin-bottom:10px}
+  .fin-filter-bar label{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:6px}
+  .fin-filter-bar input[type="date"]{padding:6px 10px;border-radius:7px;border:1px solid var(--line);font-family:inherit;font-size:13px;background:var(--paper);color:var(--ink);transition:border .15s}
+  .fin-filter-bar input[type="date"]:focus{outline:none;border-color:var(--green-700)}
+  .fin-filter-tag{font-size:12px;color:var(--green-700);font-weight:600;background:var(--green-100);padding:3px 10px;border-radius:999px}
+
+  /* ---------- Delete btn ---------- */
+  .fin-del-btn{all:unset;cursor:pointer;color:var(--muted);padding:4px 8px;border-radius:6px;font-size:14px;transition:background .12s,color .12s;line-height:1}
+  .fin-del-btn:hover{background:#fbecea;color:var(--red)}
+
+  /* ==========================================
+     MOBILE — EXTRA RESPONSIVO
+  ========================================== */
+  @media (max-width: 900px) {
+    .sidebar::before { display: none; }
+    .page-title { font-size: 28px; }
+  }
+  @media (max-width: 600px) {
+    .main { padding: 14px 14px 40px; }
+    .page-title { font-size: 24px; }
+    .page-sub { font-size: 13px; }
+    .topbar { gap: 12px; margin-bottom: 16px; }
+    .topbar-right { gap: 8px; }
+    /* Panel */
+    .panel { padding: 14px 14px; }
+    .panel-head { flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+    .panel-head h3 { font-size: 17px; }
+    /* RTabs: scrolláveis sem quebra */
+    .rtabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+    .rtab  { flex-shrink: 0; padding: 9px 12px; font-size: 13px; }
+    /* KPI stat-pills */
+    .stat-pill .vl { font-size: 24px; }
+    /* Financial form */
+    .fin-row { gap: 10px; }
+    .fin-form .field { min-width: calc(50% - 5px); }
+    .fin-desc-field { min-width: 100%; }
+    /* Import modal */
+    .import-modal { padding: 16px; gap: 12px; border-radius: 12px; }
+    .import-dropzone { padding: 24px 14px; gap: 8px; }
+  }
+  @media (max-width: 400px) {
+    .main { padding: 10px 10px 28px; }
+    .page-title { font-size: 20px; }
+    .panel { padding: 12px 12px; }
+    .fin-form .field { min-width: 100%; }
+    .kpi .value { font-size: 26px; }
+    .import-modal { padding: 12px; }
+  }
 </style>
 </head>
 <body>
@@ -632,12 +710,7 @@
         </div>
       </div>
 
-      <div id="restrictedView" style="display:none;position:relative">
-        <button class="btn ghost logout" id="btnLogout" style="width:auto;padding:8px 14px">
-          <svg class="i" viewBox="0 0 24 24"><path d="M14 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-2M10 12h11l-3-3M21 12l-3 3"/></svg>
-          Sair
-        </button>
-
+      <div id="restrictedView" style="display:none">
         <div class="topbar">
           <div>
             <h1 class="page-title serif">Área <span class="accent">Restrita</span></h1>
@@ -648,6 +721,10 @@
               <svg class="i" viewBox="0 0 24 24" style="color:var(--gold-soft)"><rect x="4" y="11" width="16" height="9" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
               Sessão autenticada · <span id="whoami">dirigente</span>
             </div>
+            <button class="btn ghost" id="btnLogout" style="width:auto;padding:8px 14px;flex-shrink:0">
+              <svg class="i" viewBox="0 0 24 24"><path d="M14 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-2M10 12h11l-3-3M21 12l-3 3"/></svg>
+              Sair
+            </button>
           </div>
         </div>
 
@@ -670,12 +747,22 @@
         <!-- Painel: Financeiro -->
         <div class="rpanel active" id="rpanel-financeiro">
 
-          <!-- KPIs dinâmicos -->
-          <div class="restricted-grid">
+          <!-- KPIs gerenciais -->
+          <div class="fin-kpi-grid">
             <div class="stat-pill">
-              <div class="lb">Total receitas</div>
-              <div class="vl" id="fin-kpi-receitas">R$ 0,00</div>
-              <div class="sb" id="fin-kpi-receitas-sub">0 lançamentos</div>
+              <div class="lb">Mensalidades</div>
+              <div class="vl" id="fin-kpi-mensalidade">R$ 0,00</div>
+              <div class="sb" id="fin-kpi-mensalidade-sub">0 lançamentos</div>
+            </div>
+            <div class="stat-pill">
+              <div class="lb">Doações</div>
+              <div class="vl" id="fin-kpi-doacao">R$ 0,00</div>
+              <div class="sb" id="fin-kpi-doacao-sub">0 lançamentos</div>
+            </div>
+            <div class="stat-pill">
+              <div class="lb">Vela Gira</div>
+              <div class="vl" id="fin-kpi-vela-gira">R$ 0,00</div>
+              <div class="sb" id="fin-kpi-vela-gira-sub">0 lançamentos</div>
             </div>
             <div class="stat-pill">
               <div class="lb">Total despesas</div>
@@ -720,6 +807,17 @@
                 </div>
               </div>
               <div class="fin-row">
+                <div class="field" style="min-width:160px">
+                  <label>Categoria</label>
+                  <select id="fin-cat" class="fin-cat-select">
+                    <option value="Mensalidade">Mensalidade</option>
+                    <option value="Doação">Doação</option>
+                    <option value="Feijoada">Feijoada</option>
+                    <option value="Vela Gira">Vela Gira</option>
+                    <option value="Outro">Outro…</option>
+                  </select>
+                  <input type="text" id="fin-cat-custom" class="fin-cat-other" placeholder="Digite a categoria" />
+                </div>
                 <div class="field" style="flex:1">
                   <label>Observações <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px">(opcional)</span></label>
                   <input type="text" id="fin-obs" placeholder="Ex: Pago via PIX" />
@@ -750,6 +848,14 @@
                 <button onclick="loadFinanceiro()" style="all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--green-700);padding:6px 10px;border-radius:8px;background:var(--green-100)" onmouseover="this.style.background='#c8e0cc'" onmouseout="this.style.background='var(--green-100)'">↻ Atualizar</button>
               </div>
             </div>
+            <!-- Filtro de data -->
+            <div class="fin-filter-bar">
+              <label>De <input type="date" id="fin-filter-de" onchange="applyFinFilter()" /></label>
+              <label>Até <input type="date" id="fin-filter-ate" onchange="applyFinFilter()" /></label>
+              <span id="fin-filter-tag" class="fin-filter-tag" style="display:none"></span>
+              <button id="fin-filter-clear" onclick="clearFinFilter()" style="display:none;all:unset;cursor:pointer;font-size:12px;color:var(--muted);text-decoration:underline">✕ Limpar</button>
+            </div>
+
             <div id="fin-tbl-loading" class="loading-state"><div class="spinner"></div> Carregando lançamentos…</div>
             <div id="fin-tbl-wrap" style="display:none;overflow:auto;border-radius:10px;border:1px solid var(--line)">
               <table class="tbl">
@@ -757,9 +863,11 @@
                   <tr>
                     <th>Data</th>
                     <th>Descrição</th>
+                    <th>Categoria</th>
                     <th>Tipo</th>
                     <th class="num">Valor</th>
                     <th>Observações</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody id="fin-tbody"></tbody>
@@ -1249,6 +1357,7 @@ const FIREBASE_CONFIG = {
 const FIN_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxkBxslh_NW5sf2gUm8MT1A2FAvSRnTs3JqcGGYa259XxwRcjJvZ3VFY_fDZueiipSz3w/exec';
 
 let _finTipo = 'Receita';
+let _finRows = [];
 
 document.querySelectorAll('.tipo-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -1257,6 +1366,18 @@ document.querySelectorAll('.tipo-btn').forEach(btn => {
     _finTipo = btn.dataset.tipo;
   });
 });
+
+/* Categoria select toggle */
+(function() {
+  const sel = document.getElementById('fin-cat');
+  const oth = document.getElementById('fin-cat-custom');
+  if (!sel || !oth) return;
+  oth.style.display = 'none';
+  sel.addEventListener('change', () => {
+    oth.style.display = sel.value === 'Outro' ? '' : 'none';
+    if (sel.value !== 'Outro') oth.value = '';
+  });
+})();
 
 function finInit() {
   const dataInput = document.getElementById('fin-data');
@@ -1289,6 +1410,7 @@ async function loadFinanceiro() {
     const resp = await fetch(FIN_SCRIPT_URL, { cache: 'no-store' });
     const json = await resp.json();
     const rows = json.rows || [];
+    _finRows = rows;
 
     loading.style.display = 'none';
     updateFinKPIs(rows);
@@ -1309,39 +1431,60 @@ async function loadFinanceiro() {
 }
 
 function updateFinKPIs(rows) {
-  const receitas  = rows.filter(r => r['Tipo'] === 'Receita').reduce((s, r) => s + (parseFloat(r['Valor']) || 0), 0);
-  const despesas  = rows.filter(r => r['Tipo'] === 'Despesa').reduce((s, r) => s + (parseFloat(r['Valor']) || 0), 0);
-  const resultado = receitas - despesas;
-  const nRec = rows.filter(r => r['Tipo'] === 'Receita').length;
-  const nDes = rows.filter(r => r['Tipo'] === 'Despesa').length;
+  const bycat  = cat => rows.filter(r => (r['Categoria'] || '').trim() === cat);
+  const sum    = arr => arr.reduce((s, r) => s + (parseFloat(r['Valor']) || 0), 0);
+  const lbl    = arr => arr.length + ' lançamento' + (arr.length !== 1 ? 's' : '');
+  const setKpi = (id, val, sub) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+    const se = document.getElementById(id + '-sub');
+    if (se) se.textContent = sub;
+  };
 
-  document.getElementById('fin-kpi-receitas').textContent     = fmtBR(receitas);
-  document.getElementById('fin-kpi-receitas-sub').textContent = nRec + ' lançamento' + (nRec !== 1 ? 's' : '');
-  document.getElementById('fin-kpi-despesas').textContent     = fmtBR(despesas);
-  document.getElementById('fin-kpi-despesas-sub').textContent = nDes + ' lançamento' + (nDes !== 1 ? 's' : '');
+  const mensalidades = bycat('Mensalidade');
+  const doacoes      = bycat('Doação');
+  const velaGira     = bycat('Vela Gira');
+  const despesas     = rows.filter(r => r['Tipo'] === 'Despesa');
+  const receitas     = rows.filter(r => r['Tipo'] === 'Receita');
+  const totalRec     = sum(receitas);
+  const totalDes     = sum(despesas);
+  const resultado    = totalRec - totalDes;
 
-  const resEl = document.getElementById('fin-kpi-resultado');
-  resEl.textContent = (resultado < 0 ? '−' : '') + fmtBR(Math.abs(resultado));
-  resEl.style.color = resultado >= 0 ? 'var(--gold-soft)' : '#e87b7b';
-  document.getElementById('fin-kpi-resultado-sub').textContent = resultado >= 0 ? '↑ Positivo' : '↓ Negativo';
+  setKpi('fin-kpi-mensalidade', fmtBR(sum(mensalidades)), lbl(mensalidades));
+  setKpi('fin-kpi-doacao',      fmtBR(sum(doacoes)),      lbl(doacoes));
+  setKpi('fin-kpi-vela-gira',   fmtBR(sum(velaGira)),     lbl(velaGira));
+  setKpi('fin-kpi-despesas',    fmtBR(totalDes),          lbl(despesas));
+
+  const resEl  = document.getElementById('fin-kpi-resultado');
+  const resSub = document.getElementById('fin-kpi-resultado-sub');
+  if (resEl) {
+    resEl.textContent = (resultado < 0 ? '−' : '') + fmtBR(Math.abs(resultado));
+    resEl.style.color = resultado >= 0 ? 'var(--gold-soft)' : '#e87b7b';
+  }
+  if (resSub) resSub.textContent = resultado >= 0 ? '↑ Positivo' : '↓ Negativo';
 }
 
 function renderFinTable(rows) {
   const tbody = document.getElementById('fin-tbody');
   tbody.innerHTML = '';
   [...rows].reverse().forEach(r => {
-    const tipo    = r['Tipo'] || '';
-    const valor   = parseFloat(r['Valor']) || 0;
-    const chipCls = tipo === 'Receita' ? 'green' : 'terra';
-    const parts   = (r['Data'] || '').toString().split('-');
-    const dataFmt = parts.length === 3 ? parts[2] + '/' + parts[1] + '/' + parts[0] : (r['Data'] || '—');
+    const tipo      = r['Tipo'] || '';
+    const valor     = parseFloat(r['Valor']) || 0;
+    const chipCls   = tipo === 'Receita' ? 'green' : 'terra';
+    const rawDate   = (r['Data'] || '').toString().split('T')[0];
+    const parts     = rawDate.split('-');
+    const dataFmt   = parts.length === 3 ? parts[2] + '/' + parts[1] + '/' + parts[0] : (r['Data'] || '—');
+    const categoria = r['Categoria'] || '—';
+    const descEsc   = (r['Descrição'] || '').replace(/'/g, "\\'");
     const tr = document.createElement('tr');
     tr.innerHTML =
       '<td style="white-space:nowrap">' + dataFmt + '</td>' +
       '<td class="strong">' + (r['Descrição'] || '—') + '</td>' +
+      '<td><span class="chip" style="background:var(--terra-100);color:var(--terra-700);font-size:11px;padding:2px 8px">' + categoria + '</span></td>' +
       '<td><span class="chip ' + chipCls + '">' + (tipo || '—') + '</span></td>' +
       '<td class="num strong">' + fmtBR(valor) + '</td>' +
-      '<td style="color:var(--muted);font-size:13px">' + (r['Observações'] || '—') + '</td>';
+      '<td style="color:var(--muted);font-size:13px">' + (r['Observações'] || '—') + '</td>' +
+      '<td><button class="fin-del-btn" title="Excluir lançamento" onclick="deleteFinEntry(' + JSON.stringify(rawDate) + ',' + JSON.stringify(r['Descrição'] || '') + ',' + valor + ',' + JSON.stringify(tipo) + ')">✕</button></td>';
     tbody.appendChild(tr);
   });
 }
@@ -1361,12 +1504,19 @@ document.getElementById('finForm').addEventListener('submit', async ev => {
   let userEmail = '';
   try { userEmail = firebase.auth().currentUser.email; } catch (_) {}
 
+  const _catSel = document.getElementById('fin-cat');
+  const _catOth = document.getElementById('fin-cat-custom');
+  const categoria = _catSel && _catSel.value === 'Outro'
+    ? (_catOth ? _catOth.value.trim() : '')
+    : (_catSel ? _catSel.value : '');
+
   const payload = {
     data:      document.getElementById('fin-data').value,
     descricao: document.getElementById('fin-desc').value.trim(),
     tipo:      _finTipo,
     valor:     parseFloat(document.getElementById('fin-valor').value) || 0,
     obs:       document.getElementById('fin-obs').value.trim(),
+    categoria: categoria,
     usuario:   userEmail
   };
 
@@ -1395,6 +1545,83 @@ document.getElementById('finForm').addEventListener('submit', async ev => {
     btn.innerHTML = '<svg class="i" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Adicionar lançamento';
   }
 });
+
+/* ===========================================================
+   FINANCEIRO — Excluir / Filtro
+=========================================================== */
+async function deleteFinEntry(data, descricao, valor, tipo) {
+  if (!confirm('Excluir lançamento "' + descricao + '"?')) return;
+  let userEmail = '';
+  try { userEmail = firebase.auth().currentUser.email; } catch (_) {}
+  try {
+    await fetch(FIN_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'delete', data, descricao, valor, tipo, usuario: userEmail }),
+      headers: { 'Content-Type': 'text/plain' }
+    });
+    await loadFinanceiro();
+  } catch (e) {
+    alert('Erro ao excluir lançamento.');
+  }
+}
+
+function applyFinFilter() {
+  const de  = document.getElementById('fin-filter-de').value;
+  const ate = document.getElementById('fin-filter-ate').value;
+  if (!de && !ate) { clearFinFilter(); return; }
+
+  const filtered = _finRows.filter(r => {
+    const d = (r['Data'] || '').toString().split('T')[0];
+    if (de  && d < de)  return false;
+    if (ate && d > ate) return false;
+    return true;
+  });
+
+  const tag      = document.getElementById('fin-filter-tag');
+  const clearBtn = document.getElementById('fin-filter-clear');
+  tag.textContent = filtered.length + ' lançamento' + (filtered.length !== 1 ? 's' : '') + ' no período';
+  tag.style.display      = '';
+  clearBtn.style.display = '';
+
+  const wrap  = document.getElementById('fin-tbl-wrap');
+  const empty = document.getElementById('fin-tbl-empty');
+  const sub   = document.getElementById('fin-tbl-sub');
+
+  updateFinKPIs(filtered);
+  if (filtered.length === 0) {
+    wrap.style.display  = 'none';
+    empty.style.display = '';
+    sub.textContent = 'Nenhum lançamento no período';
+  } else {
+    renderFinTable(filtered);
+    wrap.style.display  = '';
+    empty.style.display = 'none';
+    sub.textContent = filtered.length + ' lançamento' + (filtered.length !== 1 ? 's' : '');
+  }
+}
+
+function clearFinFilter() {
+  document.getElementById('fin-filter-de').value  = '';
+  document.getElementById('fin-filter-ate').value = '';
+  document.getElementById('fin-filter-tag').style.display   = 'none';
+  document.getElementById('fin-filter-clear').style.display = 'none';
+
+  const wrap  = document.getElementById('fin-tbl-wrap');
+  const empty = document.getElementById('fin-tbl-empty');
+  const sub   = document.getElementById('fin-tbl-sub');
+
+  updateFinKPIs(_finRows);
+  if (_finRows.length === 0) {
+    wrap.style.display  = 'none';
+    empty.style.display = '';
+    sub.textContent = 'Nenhum lançamento ainda';
+  } else {
+    renderFinTable(_finRows);
+    wrap.style.display  = '';
+    empty.style.display = 'none';
+    sub.textContent = _finRows.length + ' lançamento' + (_finRows.length !== 1 ? 's' : '');
+  }
+}
 
 /* ===========================================================
    IMPORTAÇÃO DE EXTRATO (CSV / PDF)
@@ -1671,16 +1898,35 @@ async function submitImport() {
   let userEmail = '';
   try { userEmail = firebase.auth().currentUser.email; } catch (_) {}
 
-  let done = 0, errors = 0;
+  /* Build deduplication fingerprint set: data|descricao|local|valor|tipo */
+  const _fp = r => [
+    (r['Data'] || '').toString().split('T')[0],
+    (r['Descrição'] || ''),
+    '',
+    String(parseFloat(r['Valor']) || 0),
+    (r['Tipo'] || '')
+  ].map(v => v.toLowerCase().trim()).join('|');
+
+  const fingerprints = new Set((_finRows || []).map(_fp));
+
+  let done = 0, skipped = 0, errors = 0;
   const total = _importRows.length;
   for (const row of _importRows) {
-    try {
-      await fetch(FIN_SCRIPT_URL, {
-        method:  'POST',
-        body:    JSON.stringify({ data: row.data, descricao: row.descricao, tipo: row.tipo, valor: row.valor, obs: 'Importado via extrato', usuario: userEmail }),
-        headers: { 'Content-Type': 'text/plain' }
-      });
-    } catch (_) { errors++; }
+    const fp = [row.data, row.descricao, row.local, String(row.valor), row.tipo]
+      .map(v => (v || '').toString().toLowerCase().trim()).join('|');
+
+    if (fingerprints.has(fp)) {
+      skipped++;
+    } else {
+      try {
+        await fetch(FIN_SCRIPT_URL, {
+          method:  'POST',
+          body:    JSON.stringify({ data: row.data, descricao: row.descricao, tipo: row.tipo, valor: row.valor, obs: [row.obs, row.local].filter(Boolean).join(' — ') || 'Importado via extrato', usuario: userEmail }),
+          headers: { 'Content-Type': 'text/plain' }
+        });
+        fingerprints.add(fp);
+      } catch (_) { errors++; }
+    }
     done++;
     progressBar.style.width = Math.round(done / total * 100) + '%';
     progressText.textContent = done + ' de ' + total;
@@ -1688,10 +1934,13 @@ async function submitImport() {
 
   closeImportModal();
   const feedback = document.getElementById('finFeedback');
-  feedback.textContent = errors
-    ? '⚠ ' + (done - errors) + ' importados, ' + errors + ' com erro.'
-    : '✓ ' + done + ' lançamento' + (done !== 1 ? 's' : '') + ' importado' + (done !== 1 ? 's' : '') + ' com sucesso!';
-  feedback.className = errors ? 'fin-feedback err' : 'fin-feedback ok';
+  const imported = done - errors - skipped;
+  let msg = '';
+  if (skipped > 0) msg += skipped + ' duplicado' + (skipped !== 1 ? 's' : '') + ' ignorado' + (skipped !== 1 ? 's' : '') + '. ';
+  if (errors > 0)  msg += '⚠ ' + errors + ' com erro. ';
+  msg += '✓ ' + imported + ' lançamento' + (imported !== 1 ? 's' : '') + ' importado' + (imported !== 1 ? 's' : '') + '.';
+  feedback.textContent = msg;
+  feedback.className   = errors ? 'fin-feedback err' : 'fin-feedback ok';
   setTimeout(() => { feedback.className = 'fin-feedback'; }, 5000);
   await loadFinanceiro();
 }
