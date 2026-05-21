@@ -352,6 +352,40 @@
   .fin-feedback{margin-top:10px;font-size:13px;border-radius:8px;padding:8px 12px;display:none}
   .fin-feedback.ok{display:block;background:var(--green-100);color:var(--green-700);border:1px solid #b8d9be}
   .fin-feedback.err{display:block;background:#fbecea;color:var(--red);border:1px solid #f3c8c2}
+
+  /* ---------- Import Modal ---------- */
+  .import-modal-overlay{
+    position:fixed;inset:0;background:rgba(15,20,12,.55);z-index:1000;
+    display:flex;align-items:center;justify-content:center;padding:20px;
+    backdrop-filter:blur(3px);
+  }
+  .import-modal{
+    background:var(--paper);border-radius:16px;padding:28px;
+    width:100%;max-width:760px;
+    box-shadow:0 20px 60px rgba(0,0,0,.3);
+    display:flex;flex-direction:column;gap:18px;
+    max-height:90vh;overflow:auto;
+  }
+  .import-modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .import-dropzone{
+    border:2px dashed var(--terra-300);border-radius:12px;
+    padding:36px 24px;text-align:center;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:10px;
+    background:var(--paper-2);transition:border-color .15s,background .15s;
+    user-select:none;
+  }
+  .import-dropzone:hover,.import-dropzone.drag-over{
+    border-color:var(--terra-600);background:var(--terra-100);
+  }
+  .import-cell-input{
+    all:unset;padding:4px 6px;border-radius:6px;
+    border:1px solid transparent;font-family:inherit;font-size:13px;
+    color:var(--ink);background:transparent;transition:border .15s,background .15s;
+    box-sizing:border-box;width:100%;display:block;
+  }
+  .import-cell-input:hover,.import-cell-input:focus{
+    border-color:var(--line);background:var(--paper);outline:none;
+  }
 </style>
 </head>
 <body>
@@ -708,7 +742,11 @@
                 <h3>Lançamentos</h3>
                 <div class="sub" id="fin-tbl-sub">Carregando…</div>
               </div>
-              <div class="actions">
+              <div class="actions" style="gap:8px">
+                <button onclick="openImportModal()" style="all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--terra-700);padding:6px 10px;border-radius:8px;background:var(--terra-100)" onmouseover="this.style.background='var(--terra-200)'" onmouseout="this.style.background='var(--terra-100)'">
+                  <svg class="i" style="width:13px;height:13px" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  Importar extrato
+                </button>
                 <button onclick="loadFinanceiro()" style="all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--green-700);padding:6px 10px;border-radius:8px;background:var(--green-100)" onmouseover="this.style.background='#c8e0cc'" onmouseout="this.style.background='var(--green-100)'">↻ Atualizar</button>
               </div>
             </div>
@@ -1359,6 +1397,306 @@ document.getElementById('finForm').addEventListener('submit', async ev => {
 });
 
 /* ===========================================================
+   IMPORTAÇÃO DE EXTRATO (CSV / PDF)
+=========================================================== */
+let _importRows = [];
+
+function openImportModal() {
+  document.getElementById('importModal').style.display = 'flex';
+  document.getElementById('importPreview').style.display = 'none';
+  document.getElementById('importDropZone').style.display = '';
+  document.getElementById('importFileInput').value = '';
+  document.getElementById('importProgress').style.display = 'none';
+  document.getElementById('importSubmitBtn').style.display = 'none';
+  document.getElementById('importFeedback').textContent = '';
+  _importRows = [];
+}
+
+function closeImportModal() {
+  document.getElementById('importModal').style.display = 'none';
+}
+
+function handleImportFile(file) {
+  if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  document.getElementById('importFeedback').textContent = 'Lendo arquivo…';
+  if (ext === 'pdf') {
+    parsePDF(file);
+  } else {
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('importFeedback').textContent = '';
+      const rows = parseCSV(e.target.result);
+      if (rows.length === 0) {
+        document.getElementById('importFeedback').textContent = 'Nenhuma transação detectada. Verifique o formato do arquivo.';
+      } else {
+        renderImportPreview(rows);
+      }
+    };
+    reader.readAsText(file, 'UTF-8');
+  }
+}
+
+function _parseLine(line, sep) {
+  const result = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { inQ = !inQ; continue; }
+    if (c === sep && !inQ) { result.push(cur); cur = ''; continue; }
+    cur += c;
+  }
+  result.push(cur);
+  return result;
+}
+
+function _normImportDate(raw) {
+  if (!raw) return '';
+  raw = raw.trim();
+  let m = raw.match(/^(\d{2})\/(\d{2})\/(\d{2,4})$/);
+  if (m) {
+    const year = m[3].length === 2 ? '20' + m[3] : m[3];
+    return year + '-' + m[2] + '-' + m[1];
+  }
+  m = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return raw;
+  m = raw.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (m) return m[3] + '-' + m[2] + '-' + m[1];
+  return '';
+}
+
+function _parseNumBR(str) {
+  if (!str) return NaN;
+  str = String(str).replace(/[R$\s]/g, '').trim();
+  if (!str || str === '-') return NaN;
+  if (/^-?[\d.]+,\d{1,2}$/.test(str)) return parseFloat(str.replace(/\./g, '').replace(',', '.'));
+  if (/^-?[\d,]+\.\d{1,2}$/.test(str)) return parseFloat(str.replace(/,/g, ''));
+  return parseFloat(str.replace(',', '.'));
+}
+
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (lines.length < 2) return [];
+
+  const sep = (lines[0].split(';').length > lines[0].split(',').length) ? ';' : ',';
+
+  let headerIdx = 0;
+  while (headerIdx < lines.length && _parseLine(lines[headerIdx], sep).length < 2) headerIdx++;
+  if (headerIdx >= lines.length - 1) return [];
+
+  const headers = _parseLine(lines[headerIdx], sep).map(h => h.replace(/['"]/g, '').trim().toLowerCase());
+
+  let dateCol = -1, descCol = -1, valueCol = -1, creditCol = -1, debitCol = -1;
+  headers.forEach((h, i) => {
+    if (dateCol  < 0 && /data|date|lan[çc]amento/.test(h))             dateCol  = i;
+    if (descCol  < 0 && /descri|hist[oó]|memo|identificador/.test(h))  descCol  = i;
+    if (valueCol < 0 && /^valor$|^value$|^amount$/.test(h))            valueCol = i;
+    if (creditCol < 0 && /cr[eé]d|entrada/.test(h))                    creditCol = i;
+    if (debitCol  < 0 && /d[eé]b|sa[ií]da/.test(h))                   debitCol  = i;
+  });
+
+  const hasSeparateCols = (creditCol >= 0 || debitCol >= 0) && valueCol < 0;
+
+  if (dateCol < 0 || descCol < 0 || (valueCol < 0 && !hasSeparateCols)) {
+    const sample = _parseLine(lines[headerIdx + 1] || '', sep).map(c => c.replace(/['"]/g, '').trim());
+    sample.forEach((v, i) => {
+      if (dateCol  < 0 && /^\d{2}\/\d{2}\/\d{2,4}$|^\d{4}-\d{2}-\d{2}$/.test(v)) dateCol = i;
+    });
+    if (descCol < 0) {
+      let maxLen = 0;
+      sample.forEach((v, i) => {
+        if (i !== dateCol && i !== valueCol && isNaN(_parseNumBR(v)) && v.length > maxLen) {
+          maxLen = v.length; descCol = i;
+        }
+      });
+    }
+    if (valueCol < 0 && !hasSeparateCols) {
+      sample.forEach((v, i) => {
+        if (valueCol < 0 && i !== dateCol && i !== descCol && !isNaN(_parseNumBR(v))) valueCol = i;
+      });
+    }
+  }
+
+  const rows = [];
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const cells = _parseLine(lines[i], sep).map(c => c.replace(/^["'`]|["'`]$/g, '').trim());
+    if (cells.every(c => !c)) continue;
+
+    const rawDate = dateCol >= 0 ? (cells[dateCol] || '') : '';
+    const desc    = descCol  >= 0 ? (cells[descCol]  || '') : '';
+
+    let valor = NaN;
+    if (hasSeparateCols) {
+      const cred = _parseNumBR(creditCol >= 0 ? cells[creditCol] : '') || 0;
+      const deb  = _parseNumBR(debitCol  >= 0 ? cells[debitCol]  : '') || 0;
+      valor = cred > 0 ? cred : (deb > 0 ? -deb : 0);
+    } else if (valueCol >= 0) {
+      valor = _parseNumBR(cells[valueCol]);
+    }
+
+    if (isNaN(valor) || valor === 0) continue;
+    const date = _normImportDate(rawDate);
+    if (!date) continue;
+    if (/^\s*(saldo|total)\s*$/i.test(desc)) continue;
+
+    rows.push({ data: date, descricao: desc || 'Transação', tipo: valor > 0 ? 'Receita' : 'Despesa', valor: Math.abs(valor) });
+  }
+  return rows;
+}
+
+function _loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+async function parsePDF(file) {
+  const feedback = document.getElementById('importFeedback');
+  try {
+    if (!window.pdfjsLib) {
+      feedback.textContent = 'Carregando leitor de PDF…';
+      await _loadScript('https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js');
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+    }
+    feedback.textContent = 'Extraindo texto do PDF…';
+    const pdf = await window.pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+
+    let fullText = '';
+    for (let p = 1; p <= pdf.numPages; p++) {
+      const page    = await pdf.getPage(p);
+      const content = await page.getTextContent();
+      const lineMap = new Map();
+      for (const item of content.items) {
+        const y = Math.round(item.transform[5]);
+        if (!lineMap.has(y)) lineMap.set(y, []);
+        lineMap.get(y).push({ x: item.transform[4], str: item.str });
+      }
+      [...lineMap.keys()].sort((a, b) => b - a).forEach(y => {
+        fullText += lineMap.get(y).sort((a, b) => a.x - b.x).map(i => i.str).join(' ') + '\n';
+      });
+    }
+
+    feedback.textContent = '';
+    const rows = _parsePDFText(fullText);
+    if (rows.length === 0) {
+      feedback.textContent = 'Nenhuma transação encontrada. Este PDF pode ser uma imagem escaneada.';
+    } else {
+      renderImportPreview(rows);
+    }
+  } catch (e) {
+    feedback.textContent = 'Erro ao processar PDF: ' + (e.message || String(e));
+  }
+}
+
+function _parsePDFText(text) {
+  const rows = [];
+  for (const line of text.split('\n')) {
+    const dateM = line.match(/(\d{2}\/\d{2}\/(?:\d{4}|\d{2}))/);
+    if (!dateM) continue;
+    const date = _normImportDate(dateM[1]);
+    if (!date) continue;
+    const valM = line.match(/([+-]?\s?\d{1,3}(?:[.,]\d{3})*[.,]\d{2})\s*$/);
+    if (!valM) continue;
+    const valor = _parseNumBR(valM[1].replace(/\s/g, ''));
+    if (isNaN(valor) || valor === 0) continue;
+    let desc = line.slice(dateM.index + dateM[0].length, line.lastIndexOf(valM[1])).trim().replace(/\s+/g, ' ');
+    rows.push({ data: date, descricao: desc || 'Transação', tipo: valor > 0 ? 'Receita' : 'Despesa', valor: Math.abs(valor) });
+  }
+  return rows;
+}
+
+function _escHtml(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function _fmtDateBR(iso) {
+  const p = (iso || '').split('-');
+  return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : (iso || '—');
+}
+
+function renderImportPreview(rows) {
+  _importRows = rows;
+  document.getElementById('importDropZone').style.display = 'none';
+  const preview = document.getElementById('importPreview');
+  preview.style.display = '';
+
+  const submitBtn = document.getElementById('importSubmitBtn');
+  submitBtn.style.display = '';
+  submitBtn.disabled = false;
+  submitBtn.innerHTML = '<svg class="i" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Importar ' + rows.length + ' lançamento' + (rows.length !== 1 ? 's' : '');
+
+  const tbody = document.getElementById('importPreviewTbody');
+  tbody.innerHTML = '';
+  rows.forEach((row, idx) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td style="white-space:nowrap;font-size:13px">' + _fmtDateBR(row.data) + '</td>' +
+      '<td><input class="import-cell-input" data-idx="' + idx + '" value="' + _escHtml(row.descricao) + '" /></td>' +
+      '<td>' +
+        '<div class="tipo-toggle" style="display:inline-flex">' +
+          '<button type="button" class="tipo-btn imp-tipo' + (row.tipo === 'Receita' ? ' on' : '') + '" data-idx="' + idx + '" data-tipo="Receita">↑ Receita</button>' +
+          '<button type="button" class="tipo-btn imp-tipo' + (row.tipo === 'Despesa' ? ' on' : '') + '" data-idx="' + idx + '" data-tipo="Despesa">↓ Despesa</button>' +
+        '</div>' +
+      '</td>' +
+      '<td class="num" style="white-space:nowrap;font-weight:600">' + fmtBR(row.valor) + '</td>';
+    tbody.appendChild(tr);
+  });
+
+  preview.querySelectorAll('.imp-tipo').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.idx);
+      _importRows[idx].tipo = btn.dataset.tipo;
+      btn.closest('tr').querySelectorAll('.imp-tipo').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+    });
+  });
+  preview.querySelectorAll('.import-cell-input').forEach(input => {
+    input.addEventListener('input', () => { _importRows[parseInt(input.dataset.idx)].descricao = input.value; });
+  });
+}
+
+async function submitImport() {
+  if (!_importRows.length) return;
+  const btn          = document.getElementById('importSubmitBtn');
+  const progress     = document.getElementById('importProgress');
+  const progressBar  = document.getElementById('importProgressBar');
+  const progressText = document.getElementById('importProgressText');
+
+  btn.disabled = true;
+  progress.style.display = '';
+
+  let userEmail = '';
+  try { userEmail = firebase.auth().currentUser.email; } catch (_) {}
+
+  let done = 0, errors = 0;
+  const total = _importRows.length;
+  for (const row of _importRows) {
+    try {
+      await fetch(FIN_SCRIPT_URL, {
+        method:  'POST',
+        body:    JSON.stringify({ data: row.data, descricao: row.descricao, tipo: row.tipo, valor: row.valor, obs: 'Importado via extrato', usuario: userEmail }),
+        headers: { 'Content-Type': 'text/plain' }
+      });
+    } catch (_) { errors++; }
+    done++;
+    progressBar.style.width = Math.round(done / total * 100) + '%';
+    progressText.textContent = done + ' de ' + total;
+  }
+
+  closeImportModal();
+  const feedback = document.getElementById('finFeedback');
+  feedback.textContent = errors
+    ? '⚠ ' + (done - errors) + ' importados, ' + errors + ' com erro.'
+    : '✓ ' + done + ' lançamento' + (done !== 1 ? 's' : '') + ' importado' + (done !== 1 ? 's' : '') + ' com sucesso!';
+  feedback.className = errors ? 'fin-feedback err' : 'fin-feedback ok';
+  setTimeout(() => { feedback.className = 'fin-feedback'; }, 5000);
+  await loadFinanceiro();
+}
+
+/* ===========================================================
    ABAS DA ÁREA RESTRITA
 =========================================================== */
 (function rtabsNav() {
@@ -1378,5 +1716,62 @@ document.getElementById('finForm').addEventListener('submit', async ev => {
 =========================================================== */
 initFeijoada();
 </script>
+<!-- ============== MODAL: IMPORTAR EXTRATO ============== -->
+<div id="importModal" style="display:none" class="import-modal-overlay" onclick="if(event.target===this)closeImportModal()">
+  <div class="import-modal">
+    <div class="import-modal-head">
+      <div>
+        <h3 class="serif" style="margin:0 0 2px;font-size:20px">Importar extrato</h3>
+        <div class="sub">CSV ou PDF do seu banco — revise antes de confirmar</div>
+      </div>
+      <button type="button" onclick="closeImportModal()" style="all:unset;cursor:pointer;font-size:24px;color:var(--muted);line-height:1;padding:0 8px;border-radius:6px" onmouseover="this.style.background='var(--line)'" onmouseout="this.style.background='transparent'">&times;</button>
+    </div>
+
+    <div id="importDropZone" class="import-dropzone"
+         onclick="document.getElementById('importFileInput').click()"
+         ondragover="event.preventDefault();this.classList.add('drag-over')"
+         ondragleave="this.classList.remove('drag-over')"
+         ondrop="event.preventDefault();this.classList.remove('drag-over');handleImportFile(event.dataTransfer.files[0])">
+      <svg viewBox="0 0 24 24" style="width:40px;height:40px;stroke:var(--terra-400);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      <div style="font-weight:600;color:var(--ink)">Arraste ou clique para selecionar</div>
+      <div style="font-size:12px;color:var(--muted)">.csv ou .pdf aceitos</div>
+      <input type="file" id="importFileInput" accept=".csv,.pdf,text/csv,application/pdf" style="display:none" onchange="handleImportFile(this.files[0])" />
+    </div>
+
+    <div id="importFeedback" style="font-size:13px;color:var(--muted);min-height:18px"></div>
+
+    <div id="importPreview" style="display:none">
+      <div style="overflow:auto;max-height:300px;border-radius:10px;border:1px solid var(--line)">
+        <table class="tbl" style="min-width:560px">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Descrição</th>
+              <th>Tipo</th>
+              <th class="num">Valor</th>
+            </tr>
+          </thead>
+          <tbody id="importPreviewTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="importProgress" style="display:none">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Importando… <span id="importProgressText" style="font-weight:600"></span></div>
+      <div style="height:6px;background:var(--line);border-radius:3px;overflow:hidden">
+        <div id="importProgressBar" style="height:100%;background:var(--green-600);width:0%;transition:width .25s ease"></div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:10px;padding-top:12px;border-top:1px solid var(--line)">
+      <button type="button" onclick="closeImportModal()" style="all:unset;cursor:pointer;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;color:var(--muted);background:var(--paper-2)" onmouseover="this.style.background='var(--line)'" onmouseout="this.style.background='var(--paper-2)'">Cancelar</button>
+      <button type="button" id="importSubmitBtn" onclick="submitImport()" style="display:none;width:auto;padding:10px 22px" class="btn">Importar</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
