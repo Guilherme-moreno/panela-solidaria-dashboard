@@ -1570,7 +1570,7 @@ async function parsePDF(file) {
       const content = await page.getTextContent();
       const lineMap = new Map();
       for (const item of content.items) {
-        const y = Math.round(item.transform[5] / 2) * 2;
+        const y = Math.round(item.transform[5]);
         if (!lineMap.has(y)) lineMap.set(y, []);
         lineMap.get(y).push({ x: item.transform[4], str: item.str });
       }
@@ -1592,7 +1592,7 @@ async function parsePDF(file) {
 }
 
 function _parsePDFText(text) {
-  const SKIP = /saldo\s+(inicial|final|do\s+dia)|total\s+de\s+(entradas|sa[íi]das)|extrato\s+(do\s+per|gerado)|ouvidoria|cora\s+scfi|aldeia\s+luz|agência|p[áa]g\s+\d+\s+de\s+\d+|\d{2}\/\d{2}\/\d{4}\s+a\s+\d{2}\/\d{2}\/\d{4}/i;
+  const SKIP = /total\s+de\s+(entradas|sa[íi]das)|extrato\s+(do\s+per|gerado)|ouvidoria|cora\s+scfi|aldeia\s+luz|agência|p[áa]g\s+\d+\s+de\s+\d+|\d{2}\/\d{2}\/\d{4}\s+a\s+\d{2}\/\d{2}\/\d{4}/i;
 
   const TIPOS = [
     'Transf Pix recebida', 'Transf Pix enviada',
@@ -1609,32 +1609,48 @@ function _parsePDFText(text) {
 
   for (const rawLine of text.split('\n')) {
     const line = rawLine.trim();
-    if (!line || SKIP.test(line)) continue;
+    if (!line) continue;
 
-    // Date header: DD/MM/YYYY at the start of the line
-    const dateM = line.match(/^(\d{2}\/\d{2}\/\d{4})/);
-    if (dateM) { currentDate = _normImportDate(dateM[1]); continue; }
+    // 1) Date header MUST be checked first — line contains DD/MM/YYYY (+ optional saldo)
+    const dateM = line.match(/(\d{2}\/\d{2}\/\d{4})/);
+    if (dateM) {
+      const d = _normImportDate(dateM[1]);
+      if (d) { currentDate = d; }
+      // Only skip if it's purely a date/saldo header (no transaction type keyword)
+      const hasType = TIPOS.some(t => line.toLowerCase().includes(t.toLowerCase()));
+      if (!hasType) continue;
+    }
 
-    // Transaction line: must end with [+|-] R$ value
-    const valM = line.match(/([+-])\s*R\$\s*([\d.,]+)\s*$/i);
+    // 2) Skip non-transaction header lines
+    if (SKIP.test(line)) continue;
+    if (/^\s*(saldo\s+(inicial|final)|s\.?a\.?\s)/i.test(line)) continue;
+
+    // 3) Transaction line: must contain [+|-] R$ value (anywhere in line)
+    const valM = line.match(/([+-])\s*R\s*\$\s*([\d.,]+)/i);
     if (!valM || !currentDate) continue;
 
     const valor = _parseNumBR(valM[2]);
     if (isNaN(valor) || valor === 0) continue;
 
-    // Strip value, CNPJ (XX.XXX.XXX/XXXX-XX), CPF (XXX.XXX.XXX-XX)
-    let rest = line.slice(0, line.lastIndexOf(valM[0])).trim();
+    // Strip value portion, CNPJ, CPF from the line
+    let rest = line.replace(valM[0], '').trim();
     rest = rest.replace(/\d{2,3}\.\d{3}\.\d{3}\/\d{4}-\d{2}/g, '').trim();
     rest = rest.replace(/\d{3}\.\d{3}\.\d{3}-\d{2}/g, '').trim();
+    // Remove stray date that may have been in the same line
+    rest = rest.replace(/\d{2}\/\d{2}\/\d{4}/g, '').trim();
     rest = rest.replace(/\s{2,}/g, ' ');
+
+    // Skip "Saldo do dia" even if it passed the earlier filter
+    if (/saldo\s+do\s+dia/i.test(rest)) continue;
 
     let tipoNome = '';
     let localNome = '';
     const restLow = rest.toLowerCase();
     for (const t of TIPOS) {
-      if (restLow.startsWith(t.toLowerCase())) {
+      if (restLow.includes(t.toLowerCase())) {
+        const idx = restLow.indexOf(t.toLowerCase());
         tipoNome  = t;
-        localNome = rest.slice(t.length).trim();
+        localNome = rest.slice(idx + t.length).trim();
         break;
       }
     }
@@ -1648,6 +1664,8 @@ function _parsePDFText(text) {
       valor:     valor
     });
   }
+
+  console.log('[Cora parser] linhas processadas, transações encontradas:', rows.length);
   return rows;
 }
 
