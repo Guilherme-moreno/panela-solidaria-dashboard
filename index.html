@@ -1518,12 +1518,9 @@ document.getElementById('finForm').addEventListener('submit', async ev => {
   btn.textContent = 'Salvando…';
 
   try {
-    await fetch(FIN_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      body: JSON.stringify(payload),
-      headers: { 'Content-Type': 'text/plain' }
-    });
+    const _qs = new URLSearchParams({ action:'insert', data:payload.data, descricao:payload.descricao, tipo:payload.tipo, valor:payload.valor, obs:payload.obs||'', categoria:payload.categoria||'', usuario:payload.usuario });
+    const _r  = await fetch(FIN_SCRIPT_URL + '?' + _qs.toString(), { cache:'no-store' });
+    if (!_r.ok) throw new Error('HTTP ' + _r.status);
     feedback.textContent = '✓ Lançamento salvo com sucesso!';
     feedback.className   = 'fin-feedback ok';
     document.getElementById('fin-desc').value  = '';
@@ -1549,12 +1546,8 @@ async function deleteFinEntry(data, descricao, valor, tipo) {
   let userEmail = '';
   try { userEmail = firebase.auth().currentUser.email; } catch (_) {}
   try {
-    await fetch(FIN_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      body: JSON.stringify({ action: 'delete', data, descricao, valor, tipo, usuario: userEmail }),
-      headers: { 'Content-Type': 'text/plain' }
-    });
+    const _qs = new URLSearchParams({ action:'delete', data, descricao, valor, tipo, usuario: userEmail });
+    await fetch(FIN_SCRIPT_URL + '?' + _qs.toString(), { cache:'no-store' });
     await loadFinanceiro();
   } catch (e) {
     alert('Erro ao excluir lançamento.');
@@ -1986,13 +1979,9 @@ async function submitImport() {
       skipped++;
     } else {
       try {
-        await fetch(FIN_SCRIPT_URL, {
-          method:  'POST',
-          mode:    'no-cors',
-          body:    JSON.stringify({ data: row.data, descricao: row.descricao, tipo: row.tipo, valor: row.valor, obs: 'Importado via extrato', categoria: row.categoria || '', usuario: userEmail }),
-          headers: { 'Content-Type': 'text/plain' }
-        });
-        fingerprints.add(fp);
+        const _qs = new URLSearchParams({ action:'insert', data:row.data, descricao:row.descricao, tipo:row.tipo, valor:row.valor, obs:'Importado via extrato', categoria:row.categoria||'', usuario:userEmail });
+        const _r  = await fetch(FIN_SCRIPT_URL + '?' + _qs.toString(), { cache:'no-store' });
+        if (_r.ok) fingerprints.add(fp); else errors++;
       } catch (_) { errors++; }
     }
     done++;
