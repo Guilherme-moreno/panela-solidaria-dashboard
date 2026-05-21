@@ -1,9 +1,33 @@
 // ============================================================
-// Panela Solidária — Apps Script (cole no editor e reimplante)
-// Execute as: Me | Who has access: Anyone (even anonymous)
+// Panela Solidária — Apps Script
+// IMPORTANTE: abra pelo menu Extensões > Apps Script dentro
+// da sua planilha do Google Sheets, cole este código e
+// implante como Web App:
+//   Executar como: Eu | Quem tem acesso: Qualquer pessoa
 // ============================================================
 
 var SHEET_NAME = 'Lançamentos';
+var HEADERS    = ['Data', 'Descrição', 'Tipo', 'Valor', 'Observações', 'Categoria', 'Usuário'];
+
+// Retorna (ou cria) a aba com cabeçalhos corretos
+function getSheet() {
+  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(SHEET_NAME);
+
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_NAME);
+  }
+
+  // Cria cabeçalhos se a linha 1 estiver vazia
+  var firstRow = sheet.getRange(1, 1, 1, HEADERS.length).getValues()[0];
+  var hasHeaders = firstRow.some(function(v) { return v !== ''; });
+  if (!hasHeaders) {
+    sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+    sheet.setFrozenRows(1);
+  }
+
+  return sheet;
+}
 
 function doGet(e) {
   var action = (e.parameter && e.parameter.action) ? e.parameter.action : 'get';
@@ -20,7 +44,7 @@ function doGet(e) {
 
 // ---- Leitura ------------------------------------------------
 function handleGet() {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  var sheet = getSheet();
   var data  = sheet.getDataRange().getValues();
   if (data.length <= 1) {
     return ContentService.createTextOutput(JSON.stringify({ rows: [] }))
@@ -45,9 +69,8 @@ function handleGet() {
 
 // ---- Inserção -----------------------------------------------
 function handleInsert(p) {
-  var sheet   = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
-  var data    = sheet.getDataRange().getValues();
-  var headers = data[0];
+  var sheet   = getSheet();
+  var headers = sheet.getRange(1, 1, 1, HEADERS.length).getValues()[0];
   var newRow  = new Array(headers.length).fill('');
 
   headers.forEach(function(h, i) {
@@ -70,7 +93,7 @@ function handleInsert(p) {
 
 // ---- Exclusão -----------------------------------------------
 function handleDelete(p) {
-  var sheet   = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  var sheet   = getSheet();
   var data    = sheet.getDataRange().getValues();
   var headers = data[0];
 
