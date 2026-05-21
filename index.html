@@ -411,10 +411,21 @@
   }
   .fin-cat-select:focus{outline:none;border-color:var(--green-700);background:#fff;box-shadow:0 0 0 3px rgba(45,122,62,.12)}
 
-  /* ---------- Date filter ---------- */
-  .fin-filter-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0 12px;border-bottom:1px solid var(--line);margin-bottom:10px}
+  /* ---------- Date filter (global) ---------- */
+  .fin-filter-bar{
+    display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+    padding:12px 18px;border-radius:12px;
+    background:var(--paper);border:1px solid var(--line);
+    box-shadow:var(--shadow);
+    margin-bottom:16px;
+  }
+  .fin-filter-bar .filter-label{
+    font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--muted);font-weight:700;display:flex;align-items:center;gap:6px;
+    margin-right:4px;
+  }
   .fin-filter-bar label{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:6px}
-  .fin-filter-bar input[type="date"]{padding:6px 10px;border-radius:7px;border:1px solid var(--line);font-family:inherit;font-size:13px;background:var(--paper);color:var(--ink);transition:border .15s}
+  .fin-filter-bar input[type="date"]{padding:6px 10px;border-radius:7px;border:1px solid var(--line);font-family:inherit;font-size:13px;background:var(--cream);color:var(--ink);transition:border .15s}
   .fin-filter-bar input[type="date"]:focus{outline:none;border-color:var(--green-700)}
   .fin-filter-tag{font-size:12px;color:var(--green-700);font-weight:600;background:var(--green-100);padding:3px 10px;border-radius:999px}
 
@@ -744,6 +755,18 @@
         <!-- Painel: Financeiro -->
         <div class="rpanel active" id="rpanel-financeiro">
 
+          <!-- Filtro global de período -->
+          <div class="fin-filter-bar">
+            <span class="filter-label">
+              <svg class="i" style="width:14px;height:14px" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Período
+            </span>
+            <label>De <input type="date" id="fin-filter-de" onchange="applyFinFilter()" /></label>
+            <label>Até <input type="date" id="fin-filter-ate" onchange="applyFinFilter()" /></label>
+            <span id="fin-filter-tag" class="fin-filter-tag" style="display:none"></span>
+            <button id="fin-filter-clear" onclick="clearFinFilter()" style="display:none;all:unset;cursor:pointer;font-size:12px;color:var(--muted);text-decoration:underline">✕ Limpar filtro</button>
+          </div>
+
           <!-- KPIs gerenciais -->
           <div class="fin-kpi-grid">
             <div class="stat-pill">
@@ -840,14 +863,6 @@
                 <button onclick="loadFinanceiro()" style="all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--green-700);padding:6px 10px;border-radius:8px;background:var(--green-100)" onmouseover="this.style.background='#c8e0cc'" onmouseout="this.style.background='var(--green-100)'">↻ Atualizar</button>
               </div>
             </div>
-            <!-- Filtro de data -->
-            <div class="fin-filter-bar">
-              <label>De <input type="date" id="fin-filter-de" onchange="applyFinFilter()" /></label>
-              <label>Até <input type="date" id="fin-filter-ate" onchange="applyFinFilter()" /></label>
-              <span id="fin-filter-tag" class="fin-filter-tag" style="display:none"></span>
-              <button id="fin-filter-clear" onclick="clearFinFilter()" style="display:none;all:unset;cursor:pointer;font-size:12px;color:var(--muted);text-decoration:underline">✕ Limpar</button>
-            </div>
-
             <div id="fin-tbl-loading" class="loading-state"><div class="spinner"></div> Carregando lançamentos…</div>
             <div id="fin-tbl-wrap" style="display:none;overflow:auto;border-radius:10px;border:1px solid var(--line)">
               <table class="tbl">
