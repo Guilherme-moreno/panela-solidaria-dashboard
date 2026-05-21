@@ -1427,7 +1427,8 @@ async function loadFinanceiro() {
 }
 
 function updateFinKPIs(rows) {
-  const bycat  = cat => rows.filter(r => (r['Categoria'] || '').trim() === cat);
+  const _cat   = r => { const v = (r['Categoria'] || '').trim(); return v.includes('@') ? '' : v; };
+  const bycat  = cat => rows.filter(r => _cat(r) === cat);
   const sum    = arr => arr.reduce((s, r) => s + (parseFloat(r['Valor']) || 0), 0);
   const lbl    = arr => arr.length + ' lançamento' + (arr.length !== 1 ? 's' : '');
   const setKpi = (id, val, sub) => {
@@ -1470,7 +1471,8 @@ function renderFinTable(rows) {
     const rawDate   = (r['Data'] || '').toString().split('T')[0];
     const parts     = rawDate.split('-');
     const dataFmt   = parts.length === 3 ? parts[2] + '/' + parts[1] + '/' + parts[0] : (r['Data'] || '—');
-    const categoria = r['Categoria'] || '—';
+    const catRaw    = (r['Categoria'] || '').trim();
+    const categoria = (!catRaw || catRaw.includes('@')) ? '—' : catRaw;
     const descEsc   = (r['Descrição'] || '').replace(/'/g, "\\'");
     const tr = document.createElement('tr');
     tr.innerHTML =
