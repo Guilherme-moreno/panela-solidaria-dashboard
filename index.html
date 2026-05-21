@@ -1520,6 +1520,7 @@ document.getElementById('finForm').addEventListener('submit', async ev => {
   try {
     await fetch(FIN_SCRIPT_URL, {
       method: 'POST',
+      mode: 'no-cors',
       body: JSON.stringify(payload),
       headers: { 'Content-Type': 'text/plain' }
     });
@@ -1550,6 +1551,7 @@ async function deleteFinEntry(data, descricao, valor, tipo) {
   try {
     await fetch(FIN_SCRIPT_URL, {
       method: 'POST',
+      mode: 'no-cors',
       body: JSON.stringify({ action: 'delete', data, descricao, valor, tipo, usuario: userEmail }),
       headers: { 'Content-Type': 'text/plain' }
     });
@@ -1986,6 +1988,7 @@ async function submitImport() {
       try {
         await fetch(FIN_SCRIPT_URL, {
           method:  'POST',
+          mode:    'no-cors',
           body:    JSON.stringify({ data: row.data, descricao: row.descricao, tipo: row.tipo, valor: row.valor, obs: 'Importado via extrato', categoria: row.categoria || '', usuario: userEmail }),
           headers: { 'Content-Type': 'text/plain' }
         });
