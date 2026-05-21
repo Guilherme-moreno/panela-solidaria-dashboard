@@ -386,6 +386,54 @@
   .import-cell-input:hover,.import-cell-input:focus{
     border-color:var(--line);background:var(--paper);outline:none;
   }
+  .import-obs-input{
+    all:unset;padding:3px 6px;border-radius:6px;margin-top:4px;
+    border:1px solid transparent;font-family:inherit;font-size:11.5px;
+    color:var(--muted);background:transparent;transition:border .15s,background .15s;
+    box-sizing:border-box;width:100%;display:block;font-style:italic;
+  }
+  .import-obs-input:hover,.import-obs-input:focus{
+    border-color:var(--line);background:var(--paper);color:var(--ink);outline:none;font-style:normal;
+  }
+
+  /* ==========================================
+     MOBILE — EXTRA RESPONSIVO
+  ========================================== */
+  @media (max-width: 900px) {
+    .sidebar::before { display: none; }
+    .page-title { font-size: 28px; }
+  }
+  @media (max-width: 600px) {
+    .main { padding: 14px 14px 40px; }
+    .page-title { font-size: 24px; }
+    .page-sub { font-size: 13px; }
+    .topbar { gap: 12px; margin-bottom: 16px; }
+    .topbar-right { gap: 8px; }
+    /* Panel */
+    .panel { padding: 14px 14px; }
+    .panel-head { flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+    .panel-head h3 { font-size: 17px; }
+    /* RTabs: scrolláveis sem quebra */
+    .rtabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+    .rtab  { flex-shrink: 0; padding: 9px 12px; font-size: 13px; }
+    /* KPI stat-pills */
+    .stat-pill .vl { font-size: 24px; }
+    /* Financial form */
+    .fin-row { gap: 10px; }
+    .fin-form .field { min-width: calc(50% - 5px); }
+    .fin-desc-field { min-width: 100%; }
+    /* Import modal */
+    .import-modal { padding: 16px; gap: 12px; border-radius: 12px; }
+    .import-dropzone { padding: 24px 14px; gap: 8px; }
+  }
+  @media (max-width: 400px) {
+    .main { padding: 10px 10px 28px; }
+    .page-title { font-size: 20px; }
+    .panel { padding: 12px 12px; }
+    .fin-form .field { min-width: 100%; }
+    .kpi .value { font-size: 26px; }
+    .import-modal { padding: 12px; }
+  }
 </style>
 </head>
 <body>
@@ -1539,7 +1587,7 @@ function parseCSV(text) {
     if (!date) continue;
     if (/^\s*(saldo|total)\s*$/i.test(desc)) continue;
 
-    rows.push({ data: date, descricao: desc || 'Transação', local: '', tipo: valor > 0 ? 'Receita' : 'Despesa', valor: Math.abs(valor) });
+    rows.push({ data: date, descricao: desc || 'Transação', local: '', obs: '', tipo: valor > 0 ? 'Receita' : 'Despesa', valor: Math.abs(valor) });
   }
   return rows;
 }
@@ -1660,6 +1708,7 @@ function _parsePDFText(text) {
       data:      currentDate,
       descricao: tipoNome || 'Transação',
       local:     localNome,
+      obs:       '',
       tipo:      valM[1] === '+' ? 'Receita' : 'Despesa',
       valor:     valor
     });
@@ -1695,7 +1744,10 @@ function renderImportPreview(rows) {
     const tr = document.createElement('tr');
     tr.innerHTML =
       '<td style="white-space:nowrap;font-size:13px">' + _fmtDateBR(row.data) + '</td>' +
-      '<td><input class="import-cell-input imp-desc" data-idx="' + idx + '" value="' + _escHtml(row.descricao) + '" /></td>' +
+      '<td style="min-width:160px">' +
+        '<input class="import-cell-input imp-desc" data-idx="' + idx + '" value="' + _escHtml(row.descricao) + '" />' +
+        '<input class="import-obs-input imp-obs" data-idx="' + idx + '" value="' + _escHtml(row.obs || '') + '" placeholder="Observação (opcional)" />' +
+      '</td>' +
       '<td><input class="import-cell-input imp-local" data-idx="' + idx + '" value="' + _escHtml(row.local || '') + '" placeholder="—" /></td>' +
       '<td>' +
         '<div class="tipo-toggle" style="display:inline-flex">' +
@@ -1721,6 +1773,9 @@ function renderImportPreview(rows) {
   preview.querySelectorAll('.imp-local').forEach(input => {
     input.addEventListener('input', () => { _importRows[parseInt(input.dataset.idx)].local = input.value; });
   });
+  preview.querySelectorAll('.imp-obs').forEach(input => {
+    input.addEventListener('input', () => { _importRows[parseInt(input.dataset.idx)].obs = input.value; });
+  });
 }
 
 async function submitImport() {
@@ -1742,7 +1797,7 @@ async function submitImport() {
     try {
       await fetch(FIN_SCRIPT_URL, {
         method:  'POST',
-        body:    JSON.stringify({ data: row.data, descricao: row.descricao, tipo: row.tipo, valor: row.valor, obs: row.local || 'Importado via extrato', usuario: userEmail }),
+        body:    JSON.stringify({ data: row.data, descricao: row.descricao, tipo: row.tipo, valor: row.valor, obs: [row.obs, row.local].filter(Boolean).join(' — ') || 'Importado via extrato', usuario: userEmail }),
         headers: { 'Content-Type': 'text/plain' }
       });
     } catch (_) { errors++; }
