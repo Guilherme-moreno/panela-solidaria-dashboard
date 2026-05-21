@@ -403,18 +403,13 @@
   @media (max-width:700px){.fin-kpi-grid{grid-template-columns:repeat(2,1fr)}}
   @media (max-width:400px){.fin-kpi-grid{grid-template-columns:1fr}}
 
-  /* ---------- Categoria select ---------- */
+  /* ---------- Categoria input ---------- */
   .fin-cat-select{
     padding:10px 12px;border-radius:8px;border:1px solid var(--line);
     font-family:inherit;font-size:14px;background:var(--paper);color:var(--ink);
-    width:100%;-webkit-appearance:none;appearance:none;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a6451' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-    background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;
-    transition:border .15s,background .15s;
+    width:100%;transition:border .15s,background .15s;
   }
   .fin-cat-select:focus{outline:none;border-color:var(--green-700);background:#fff;box-shadow:0 0 0 3px rgba(45,122,62,.12)}
-  .fin-cat-other{margin-top:6px;display:none}
-  .fin-cat-other.show{display:block}
 
   /* ---------- Date filter ---------- */
   .fin-filter-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0 12px;border-bottom:1px solid var(--line);margin-bottom:10px}
@@ -809,20 +804,15 @@
                 </div>
               </div>
               <div class="fin-row">
-                <div class="field" style="min-width:160px">
+                <div class="field" style="min-width:180px;flex:1">
                   <label>Categoria</label>
-                  <select id="fin-cat" class="fin-cat-select">
-                    <option value="Mensalidade">Mensalidade</option>
-                    <option value="Doação">Doação</option>
-                    <option value="Feijoada">Feijoada</option>
-                    <option value="Vela Gira">Vela Gira</option>
-                    <option value="Outro">Outro…</option>
-                  </select>
-                  <input type="text" id="fin-cat-custom" class="fin-cat-other" placeholder="Digite a categoria" />
-                </div>
-                <div class="field" style="flex:1">
-                  <label>Observações <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px">(opcional)</span></label>
-                  <input type="text" id="fin-obs" placeholder="Ex: Pago via PIX" />
+                  <input type="text" id="fin-cat" list="fin-cat-list" class="fin-cat-select" placeholder="Ex: Doação" autocomplete="off" />
+                  <datalist id="fin-cat-list">
+                    <option value="Mensalidade">
+                    <option value="Doação">
+                    <option value="Feijoada">
+                    <option value="Vela Gira">
+                  </datalist>
                 </div>
                 <div style="display:flex;align-items:flex-end">
                   <button class="btn" type="submit" id="finSubmitBtn" style="width:auto;padding:11px 22px;white-space:nowrap">
@@ -1369,17 +1359,6 @@ document.querySelectorAll('.tipo-btn').forEach(btn => {
   });
 });
 
-/* Categoria select toggle */
-(function() {
-  const sel = document.getElementById('fin-cat');
-  const oth = document.getElementById('fin-cat-custom');
-  if (!sel || !oth) return;
-  oth.style.display = 'none';
-  sel.addEventListener('change', () => {
-    oth.style.display = sel.value === 'Outro' ? '' : 'none';
-    if (sel.value !== 'Outro') oth.value = '';
-  });
-})();
 
 function finInit() {
   const dataInput = document.getElementById('fin-data');
@@ -1506,18 +1485,14 @@ document.getElementById('finForm').addEventListener('submit', async ev => {
   let userEmail = '';
   try { userEmail = firebase.auth().currentUser.email; } catch (_) {}
 
-  const _catSel = document.getElementById('fin-cat');
-  const _catOth = document.getElementById('fin-cat-custom');
-  const categoria = _catSel && _catSel.value === 'Outro'
-    ? (_catOth ? _catOth.value.trim() : '')
-    : (_catSel ? _catSel.value : '');
+  const categoria = (document.getElementById('fin-cat').value || '').trim();
 
   const payload = {
     data:      document.getElementById('fin-data').value,
     descricao: document.getElementById('fin-desc').value.trim(),
     tipo:      _finTipo,
     valor:     parseFloat(document.getElementById('fin-valor').value) || 0,
-    obs:       document.getElementById('fin-obs').value.trim(),
+    obs:       '',
     categoria: categoria,
     usuario:   userEmail
   };
@@ -1535,7 +1510,7 @@ document.getElementById('finForm').addEventListener('submit', async ev => {
     feedback.className   = 'fin-feedback ok';
     document.getElementById('fin-desc').value  = '';
     document.getElementById('fin-valor').value = '';
-    document.getElementById('fin-obs').value   = '';
+    document.getElementById('fin-cat').value   = '';
     document.getElementById('fin-data').value  = new Date().toISOString().split('T')[0];
     await loadFinanceiro();
     setTimeout(() => { feedback.className = 'fin-feedback'; }, 4000);
@@ -1768,7 +1743,7 @@ function parseCSV(text) {
     if (!date) continue;
     if (/^\s*(saldo|total)\s*$/i.test(desc)) continue;
 
-    rows.push({ data: date, descricao: desc || 'Transação', local: '', obs: '', tipo: valor > 0 ? 'Receita' : 'Despesa', valor: Math.abs(valor) });
+    rows.push({ data: date, descricao: desc || 'Transação', local: '', obs: '', tipo: valor > 0 ? 'Receita' : 'Despesa', valor: Math.abs(valor), categoria: valor > 0 ? 'Doação' : '' });
   }
   return rows;
 }
@@ -1891,7 +1866,8 @@ function _parsePDFText(text) {
       local:     localNome,
       obs:       '',
       tipo:      valM[1] === '+' ? 'Receita' : 'Despesa',
-      valor:     valor
+      valor:     valor,
+      categoria: valM[1] === '+' ? 'Doação' : ''
     });
   }
 
@@ -1927,9 +1903,10 @@ function renderImportPreview(rows) {
       '<td style="white-space:nowrap;font-size:13px">' + _fmtDateBR(row.data) + '</td>' +
       '<td style="min-width:160px">' +
         '<input class="import-cell-input imp-desc" data-idx="' + idx + '" value="' + _escHtml(row.descricao) + '" />' +
-        '<input class="import-obs-input imp-obs" data-idx="' + idx + '" value="' + _escHtml(row.obs || '') + '" placeholder="Observação (opcional)" />' +
       '</td>' +
-      '<td><input class="import-cell-input imp-local" data-idx="' + idx + '" value="' + _escHtml(row.local || '') + '" placeholder="—" /></td>' +
+      '<td style="min-width:140px">' +
+        '<input class="import-cell-input imp-cat" list="fin-cat-list" data-idx="' + idx + '" value="' + _escHtml(row.categoria || '') + '" placeholder="Ex: Doação" autocomplete="off" />' +
+      '</td>' +
       '<td>' +
         '<div class="tipo-toggle" style="display:inline-flex">' +
           '<button type="button" class="tipo-btn imp-tipo' + (row.tipo === 'Receita' ? ' on' : '') + '" data-idx="' + idx + '" data-tipo="Receita">↑ Receita</button>' +
@@ -1951,11 +1928,8 @@ function renderImportPreview(rows) {
   preview.querySelectorAll('.imp-desc').forEach(input => {
     input.addEventListener('input', () => { _importRows[parseInt(input.dataset.idx)].descricao = input.value; });
   });
-  preview.querySelectorAll('.imp-local').forEach(input => {
-    input.addEventListener('input', () => { _importRows[parseInt(input.dataset.idx)].local = input.value; });
-  });
-  preview.querySelectorAll('.imp-obs').forEach(input => {
-    input.addEventListener('input', () => { _importRows[parseInt(input.dataset.idx)].obs = input.value; });
+  preview.querySelectorAll('.imp-cat').forEach(input => {
+    input.addEventListener('input', () => { _importRows[parseInt(input.dataset.idx)].categoria = input.value; });
   });
 }
 
@@ -1995,7 +1969,7 @@ async function submitImport() {
       try {
         await fetch(FIN_SCRIPT_URL, {
           method:  'POST',
-          body:    JSON.stringify({ data: row.data, descricao: row.descricao, tipo: row.tipo, valor: row.valor, obs: [row.obs, row.local].filter(Boolean).join(' — ') || 'Importado via extrato', usuario: userEmail }),
+          body:    JSON.stringify({ data: row.data, descricao: row.descricao, tipo: row.tipo, valor: row.valor, obs: 'Importado via extrato', categoria: row.categoria || '', usuario: userEmail }),
           headers: { 'Content-Type': 'text/plain' }
         });
         fingerprints.add(fp);
@@ -2074,7 +2048,7 @@ initFeijoada();
             <tr>
               <th>Data</th>
               <th>Nome da Transação</th>
-              <th>Local</th>
+              <th>Categoria</th>
               <th>Tipo</th>
               <th class="num">Valor</th>
             </tr>
