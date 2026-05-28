@@ -870,6 +870,7 @@
                   <tr>
                     <th>Data</th>
                     <th>Descrição</th>
+                    <th>Remetente</th>
                     <th>Categoria</th>
                     <th>Tipo</th>
                     <th class="num">Valor</th>
@@ -1475,9 +1476,11 @@ function renderFinTable(rows) {
     const categoria = (!catRaw || catRaw.includes('@')) ? '—' : catRaw;
     const descEsc   = (r['Descrição'] || '').replace(/'/g, "\\'");
     const tr = document.createElement('tr');
+    const remetente = (r['Remetente'] || '').trim();
     tr.innerHTML =
       '<td style="white-space:nowrap">' + dataFmt + '</td>' +
       '<td class="strong">' + (r['Descrição'] || '—') + '</td>' +
+      '<td style="color:var(--muted);font-size:13px">' + (remetente || '—') + '</td>' +
       '<td><span class="chip" style="background:var(--terra-100);color:var(--terra-700);font-size:11px;padding:2px 8px">' + categoria + '</span></td>' +
       '<td><span class="chip ' + chipCls + '">' + (tipo || '—') + '</span></td>' +
       '<td class="num strong">' + fmtBR(valor) + '</td>' +
@@ -1916,6 +1919,9 @@ function renderImportPreview(rows) {
       '<td style="min-width:160px">' +
         '<input class="import-cell-input imp-desc" data-idx="' + idx + '" value="' + _escHtml(row.descricao) + '" />' +
       '</td>' +
+      '<td style="min-width:150px">' +
+        '<input class="import-cell-input imp-local" data-idx="' + idx + '" value="' + _escHtml(row.local || '') + '" placeholder="Nome do remetente" />' +
+      '</td>' +
       '<td style="min-width:140px">' +
         '<input class="import-cell-input imp-cat" list="fin-cat-list" data-idx="' + idx + '" value="' + _escHtml(row.categoria || '') + '" placeholder="Ex: Doação" autocomplete="off" />' +
       '</td>' +
@@ -1940,6 +1946,9 @@ function renderImportPreview(rows) {
   preview.querySelectorAll('.imp-desc').forEach(input => {
     input.addEventListener('input', () => { _importRows[parseInt(input.dataset.idx)].descricao = input.value; });
   });
+  preview.querySelectorAll('.imp-local').forEach(input => {
+    input.addEventListener('input', () => { _importRows[parseInt(input.dataset.idx)].local = input.value; });
+  });
   preview.querySelectorAll('.imp-cat').forEach(input => {
     input.addEventListener('input', () => { _importRows[parseInt(input.dataset.idx)].categoria = input.value; });
   });
@@ -1958,11 +1967,10 @@ async function submitImport() {
   let userEmail = '';
   try { userEmail = firebase.auth().currentUser.email; } catch (_) {}
 
-  /* Build deduplication fingerprint set: data|descricao|local|valor|tipo */
+  /* Build deduplication fingerprint set: data|descricao|valor|tipo */
   const _fp = r => [
     (r['Data'] || '').toString().split('T')[0],
     (r['Descrição'] || ''),
-    '',
     String(parseFloat(r['Valor']) || 0),
     (r['Tipo'] || '')
   ].map(v => v.toLowerCase().trim()).join('|');
@@ -1972,14 +1980,14 @@ async function submitImport() {
   let done = 0, skipped = 0, errors = 0;
   const total = _importRows.length;
   for (const row of _importRows) {
-    const fp = [row.data, row.descricao, row.local, String(row.valor), row.tipo]
+    const fp = [row.data, row.descricao, String(row.valor), row.tipo]
       .map(v => (v || '').toString().toLowerCase().trim()).join('|');
 
     if (fingerprints.has(fp)) {
       skipped++;
     } else {
       try {
-        const _qs = new URLSearchParams({ action:'insert', data:row.data, descricao:row.descricao, tipo:row.tipo, valor:row.valor, obs:'Importado via extrato', categoria:row.categoria||'', usuario:userEmail });
+        const _qs = new URLSearchParams({ action:'insert', data:row.data, descricao:row.descricao, tipo:row.tipo, valor:row.valor, obs:'Importado via extrato', categoria:row.categoria||'', usuario:userEmail, remetente:row.local||'' });
         const _r  = await fetch(FIN_SCRIPT_URL + '?' + _qs.toString(), { cache:'no-store' });
         if (_r.ok) fingerprints.add(fp); else errors++;
       } catch (_) { errors++; }
@@ -2052,11 +2060,12 @@ initFeijoada();
 
     <div id="importPreview" style="display:none">
       <div style="overflow:auto;max-height:300px;border-radius:10px;border:1px solid var(--line)">
-        <table class="tbl" style="min-width:700px">
+        <table class="tbl" style="min-width:860px">
           <thead>
             <tr>
               <th>Data</th>
               <th>Nome da Transação</th>
+              <th>Remetente / Nome</th>
               <th>Categoria</th>
               <th>Tipo</th>
               <th class="num">Valor</th>

@@ -7,7 +7,7 @@
 // ============================================================
 
 var SHEET_NAME = 'Lançamentos';
-var HEADERS    = ['Data', 'Descrição', 'Tipo', 'Valor', 'Observações', 'Categoria', 'Usuário'];
+var HEADERS    = ['Data', 'Descrição', 'Tipo', 'Valor', 'Observações', 'Categoria', 'Usuário', 'Remetente'];
 
 // Retorna (ou cria) a aba com cabeçalhos corretos
 function getSheet() {
@@ -83,6 +83,7 @@ function handleInsert(p) {
       case 'Observações':  newRow[i] = p.obs         || ''; break;
       case 'Categoria':    newRow[i] = p.categoria   || ''; break;
       case 'Usuário':      newRow[i] = p.usuario     || ''; break;
+      case 'Remetente':    newRow[i] = p.remetente   || ''; break;
     }
   });
 
