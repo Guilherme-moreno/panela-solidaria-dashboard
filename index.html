@@ -1030,7 +1030,7 @@ const SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSkAt8JeuFvM
 
 async function fetchCSV() {
   const url  = SHEETS_URL + '&_ts=' + Date.now();
-  const resp = await fetch(url, { cache: 'no-store' });
+  const resp = await fetch(url, { cache: 'no-store', credentials: 'omit', redirect: 'follow' });
   if (!resp.ok) throw new Error('Não foi possível carregar a planilha (' + resp.status + ')');
   return resp.text();
 }
