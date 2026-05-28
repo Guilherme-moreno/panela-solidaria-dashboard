@@ -1662,6 +1662,9 @@ async function saveEditEntry() {
   let userEmail = '';
   try { userEmail = firebase.auth().currentUser.email; } catch (_) {}
 
+  // Snapshot origRow before closeEditModal() nulls _editOrigRow
+  const origRow = { data: _editOrigRow.data, descricao: _editOrigRow.descricao, valor: _editOrigRow.valor, tipo: _editOrigRow.tipo };
+
   // Optimistic: update local state and close modal immediately
   const prevRows = _finRows.slice();
   const idx = _finRows.findIndex(r => _fp(r) === _fp(_editOrigRow));
@@ -1671,7 +1674,7 @@ async function saveEditEntry() {
   closeEditModal();
 
   try {
-    const delQs = new URLSearchParams({ action:'delete', data: _editOrigRow.data, descricao: _editOrigRow.descricao, valor: _editOrigRow.valor, tipo: _editOrigRow.tipo });
+    const delQs = new URLSearchParams({ action:'delete', data: origRow.data, descricao: origRow.descricao, valor: origRow.valor, tipo: origRow.tipo });
     await fetch(FIN_SCRIPT_URL + '?' + delQs.toString(), { cache:'no-store' });
 
     const insQs = new URLSearchParams({ action:'insert', data, descricao, tipo: _editTipo, valor, obs, categoria, usuario: userEmail, remetente });
