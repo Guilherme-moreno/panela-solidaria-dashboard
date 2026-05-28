@@ -9,7 +9,8 @@
 var SHEET_NAME = 'Lançamentos';
 var HEADERS    = ['Data', 'Descrição', 'Tipo', 'Valor', 'Observações', 'Categoria', 'Usuário', 'Remetente'];
 
-// Retorna (ou cria) a aba com cabeçalhos corretos
+// Retorna (ou cria) a aba com cabeçalhos corretos.
+// Se a planilha já tiver dados, adiciona colunas novas que estejam faltando.
 function getSheet() {
   var ss    = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(SHEET_NAME);
@@ -18,12 +19,23 @@ function getSheet() {
     sheet = ss.insertSheet(SHEET_NAME);
   }
 
-  // Cria cabeçalhos se a linha 1 estiver vazia
-  var firstRow = sheet.getRange(1, 1, 1, HEADERS.length).getValues()[0];
+  var lastCol   = Math.max(sheet.getLastColumn(), 1);
+  var firstRow  = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
   var hasHeaders = firstRow.some(function(v) { return v !== ''; });
+
   if (!hasHeaders) {
+    // Planilha vazia: cria todos os cabeçalhos de uma vez
     sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
     sheet.setFrozenRows(1);
+  } else {
+    // Planilha existente: adiciona colunas que estejam faltando (ex: Remetente)
+    HEADERS.forEach(function(h) {
+      if (firstRow.indexOf(h) === -1) {
+        var newCol = sheet.getLastColumn() + 1;
+        sheet.getRange(1, newCol).setValue(h);
+        firstRow.push(h);
+      }
+    });
   }
 
   return sheet;
