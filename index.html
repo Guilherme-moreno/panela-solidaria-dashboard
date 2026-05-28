@@ -1369,6 +1369,36 @@ const FIN_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzVQ5a_qkz4b4b6o
 let _finTipo = 'Receita';
 let _finRows = [];
 
+// Fingerprint to identify a row (works with both API keys and rowSnap keys)
+function _fp(r) {
+  return [
+    (r['Data'] || r.data || '').toString().split('T')[0],
+    (r['Descrição'] || r.descricao || ''),
+    String(parseFloat(r['Valor'] !== undefined ? r['Valor'] : r.valor) || 0),
+    (r['Tipo'] || r.tipo || '')
+  ].map(v => v.toLowerCase().trim()).join('|');
+}
+
+// Central render: update table, KPIs, subtitle, and localStorage cache
+function _applyFinRows(rows) {
+  const wrap  = document.getElementById('fin-tbl-wrap');
+  const empty = document.getElementById('fin-tbl-empty');
+  const sub   = document.getElementById('fin-tbl-sub');
+  _finRows = rows;
+  updateFinKPIs(rows);
+  if (rows.length === 0) {
+    wrap.style.display  = 'none';
+    empty.style.display = '';
+    sub.textContent = 'Nenhum lançamento ainda';
+  } else {
+    renderFinTable(rows);
+    wrap.style.display  = '';
+    empty.style.display = 'none';
+    sub.textContent = rows.length + ' lançamento' + (rows.length !== 1 ? 's' : '');
+  }
+  try { localStorage.setItem('panela_fin_rows', JSON.stringify(rows)); } catch (_) {}
+}
+
 document.querySelectorAll('.tipo-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tipo-btn').forEach(b => b.classList.remove('on'));
@@ -1388,44 +1418,42 @@ function finInit() {
 
 async function loadFinanceiro() {
   const loading = document.getElementById('fin-tbl-loading');
-  const wrap    = document.getElementById('fin-tbl-wrap');
-  const empty   = document.getElementById('fin-tbl-empty');
   const sub     = document.getElementById('fin-tbl-sub');
   if (!loading) return;
 
-  loading.style.display = '';
-  wrap.style.display    = 'none';
-  empty.style.display   = 'none';
-
   if (FIN_SCRIPT_URL === 'COLE_AQUI_URL_DO_APPS_SCRIPT') {
     loading.style.display = 'none';
-    empty.style.display   = '';
+    document.getElementById('fin-tbl-empty').style.display = '';
     sub.textContent = 'Configure o Apps Script para carregar os dados';
     updateFinKPIs([]);
     return;
   }
 
+  // Show cached data instantly while the fresh fetch runs in the background
+  const cached = (() => { try { return JSON.parse(localStorage.getItem('panela_fin_rows') || 'null'); } catch(_){return null;} })();
+  if (cached && cached.length > 0) {
+    loading.style.display = 'none';
+    _applyFinRows(cached);
+    sub.textContent = cached.length + ' lançamento' + (cached.length !== 1 ? 's' : '') + ' · atualizando…';
+  } else {
+    loading.style.display = '';
+    document.getElementById('fin-tbl-wrap').style.display  = 'none';
+    document.getElementById('fin-tbl-empty').style.display = 'none';
+  }
+
   try {
     const resp = await fetch(FIN_SCRIPT_URL, { cache: 'no-store' });
     const json = await resp.json();
-    const rows = json.rows || [];
-    _finRows = rows;
-
     loading.style.display = 'none';
-    updateFinKPIs(rows);
-
-    if (rows.length === 0) {
-      empty.style.display = '';
-      sub.textContent = 'Nenhum lançamento ainda';
-    } else {
-      renderFinTable(rows);
-      wrap.style.display = '';
-      sub.textContent = rows.length + ' lançamento' + (rows.length !== 1 ? 's' : '');
-    }
+    _applyFinRows(json.rows || []);
   } catch (e) {
     loading.style.display = 'none';
-    empty.style.display   = '';
-    sub.textContent = 'Erro ao carregar dados';
+    if (!_finRows || _finRows.length === 0) {
+      document.getElementById('fin-tbl-empty').style.display = '';
+      sub.textContent = 'Erro ao carregar dados';
+    } else {
+      sub.textContent = _finRows.length + ' lançamento' + (_finRows.length !== 1 ? 's' : '') + ' · falha ao atualizar';
+    }
   }
 }
 
@@ -1525,19 +1553,26 @@ document.getElementById('finForm').addEventListener('submit', async ev => {
   btn.disabled    = true;
   btn.textContent = 'Salvando…';
 
+  // Optimistic: add the new row locally before the network call finishes
+  const newEntry = { 'Data': payload.data, 'Descrição': payload.descricao, 'Tipo': payload.tipo, 'Valor': payload.valor, 'Observações': '', 'Categoria': payload.categoria, 'Usuário': payload.usuario, 'Remetente': '' };
+  const prevRows = _finRows.slice();
+  _applyFinRows([..._finRows, newEntry]);
+  document.getElementById('fin-desc').value  = '';
+  document.getElementById('fin-valor').value = '';
+  document.getElementById('fin-cat').value   = '';
+  document.getElementById('fin-data').value  = new Date().toISOString().split('T')[0];
+  btn.disabled    = false;
+  btn.textContent = 'Adicionar lançamento';
+
   try {
     const _qs = new URLSearchParams({ action:'insert', data:payload.data, descricao:payload.descricao, tipo:payload.tipo, valor:payload.valor, obs:payload.obs||'', categoria:payload.categoria||'', usuario:payload.usuario });
     const _r  = await fetch(FIN_SCRIPT_URL + '?' + _qs.toString(), { cache:'no-store' });
     if (!_r.ok) throw new Error('HTTP ' + _r.status);
-    feedback.textContent = '✓ Lançamento salvo com sucesso!';
+    feedback.textContent = '✓ Lançamento adicionado!';
     feedback.className   = 'fin-feedback ok';
-    document.getElementById('fin-desc').value  = '';
-    document.getElementById('fin-valor').value = '';
-    document.getElementById('fin-cat').value   = '';
-    document.getElementById('fin-data').value  = new Date().toISOString().split('T')[0];
-    await loadFinanceiro();
-    setTimeout(() => { feedback.className = 'fin-feedback'; }, 4000);
+    setTimeout(() => { feedback.className = 'fin-feedback'; }, 3000);
   } catch (e) {
+    _applyFinRows(prevRows);
     feedback.textContent = 'Erro ao salvar. Verifique a conexão e tente novamente.';
     feedback.className   = 'fin-feedback err';
   } finally {
@@ -1551,14 +1586,21 @@ document.getElementById('finForm').addEventListener('submit', async ev => {
 =========================================================== */
 async function deleteFinEntry(row) {
   if (!confirm('Excluir lançamento "' + row.descricao + '"?')) return;
+
+  // Optimistic: remove row from local state immediately
+  const prevRows = _finRows.slice();
+  const idx = _finRows.findIndex(r => _fp(r) === _fp(row));
+  if (idx !== -1) _finRows.splice(idx, 1);
+  _applyFinRows(_finRows.slice());
+
   let userEmail = '';
   try { userEmail = firebase.auth().currentUser.email; } catch (_) {}
   try {
     const _qs = new URLSearchParams({ action:'delete', data: row.data, descricao: row.descricao, valor: row.valor, tipo: row.tipo, usuario: userEmail });
     await fetch(FIN_SCRIPT_URL + '?' + _qs.toString(), { cache:'no-store' });
-    await loadFinanceiro();
   } catch (e) {
-    alert('Erro ao excluir lançamento.');
+    _applyFinRows(prevRows);
+    alert('Erro ao excluir. A linha foi restaurada.');
   }
 }
 
@@ -1617,12 +1659,16 @@ async function saveEditEntry() {
     return;
   }
 
-  btn.disabled    = true;
-  btn.textContent = 'Salvando…';
-  feedback.textContent = '';
-
   let userEmail = '';
   try { userEmail = firebase.auth().currentUser.email; } catch (_) {}
+
+  // Optimistic: update local state and close modal immediately
+  const prevRows = _finRows.slice();
+  const idx = _finRows.findIndex(r => _fp(r) === _fp(_editOrigRow));
+  const updatedEntry = { 'Data': data, 'Descrição': descricao, 'Tipo': _editTipo, 'Valor': valor, 'Observações': obs, 'Categoria': categoria, 'Usuário': userEmail, 'Remetente': remetente };
+  if (idx !== -1) { _finRows[idx] = updatedEntry; } else { _finRows.push(updatedEntry); }
+  _applyFinRows(_finRows.slice());
+  closeEditModal();
 
   try {
     const delQs = new URLSearchParams({ action:'delete', data: _editOrigRow.data, descricao: _editOrigRow.descricao, valor: _editOrigRow.valor, tipo: _editOrigRow.tipo });
@@ -1630,14 +1676,9 @@ async function saveEditEntry() {
 
     const insQs = new URLSearchParams({ action:'insert', data, descricao, tipo: _editTipo, valor, obs, categoria, usuario: userEmail, remetente });
     await fetch(FIN_SCRIPT_URL + '?' + insQs.toString(), { cache:'no-store' });
-
-    closeEditModal();
-    await loadFinanceiro();
   } catch (e) {
-    feedback.textContent = 'Erro ao salvar. Tente novamente.';
-    feedback.style.color = 'var(--red)';
-    btn.disabled    = false;
-    btn.textContent = 'Salvar alterações';
+    _applyFinRows(prevRows);
+    alert('Erro ao salvar. As alterações foram revertidas.');
   }
 }
 
