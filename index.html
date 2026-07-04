@@ -294,6 +294,11 @@
   .stat-pill .sb{font-size:12px;opacity:.7;margin-top:4px}
   .logout{position:absolute;top:18px;right:18px}
 
+  /* ---------- Barra de meta (campanhas) ---------- */
+  .goal-bar-track{height:10px;border-radius:999px;background:var(--line);overflow:hidden}
+  .goal-bar-fill{height:100%;background:linear-gradient(90deg,var(--green-600),var(--gold));border-radius:999px;transition:width .5s ease}
+  .goal-bar-label{margin-top:8px;font-size:12px;color:var(--muted);font-weight:600}
+
   /* ---------- Screens ---------- */
   .screen{display:none;animation:fade .25s ease}
   .screen.active{display:block}
@@ -402,6 +407,11 @@
   @media (max-width:1200px){.fin-kpi-grid{grid-template-columns:repeat(3,1fr)}}
   @media (max-width:700px){.fin-kpi-grid{grid-template-columns:repeat(2,1fr)}}
   @media (max-width:400px){.fin-kpi-grid{grid-template-columns:1fr}}
+
+  /* ---------- Cobertores KPI Grid (4 pills) ---------- */
+  .cob-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:14px}
+  @media (max-width:1200px){.cob-kpi-grid{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:600px){.cob-kpi-grid{grid-template-columns:1fr}}
 
   /* ---------- Categoria input ---------- */
   .fin-cat-select{
@@ -752,6 +762,10 @@
             <svg class="i" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
             Doações da Gira
           </button>
+          <button class="rtab" data-rtab="cobertores">
+            <svg class="i" viewBox="0 0 24 24"><path d="M4 7l4-3 2 2h4l2-2 4 3-2 4h-2v9H8v-9H6L4 7z"/></svg>
+            Campanha Cobertores
+          </button>
         </div>
 
         <!-- Painel: Financeiro -->
@@ -957,6 +971,76 @@
             <div class="empty-state">
               <svg class="i" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
               Conecte a planilha para visualizar as doações das giras.
+            </div>
+          </div>
+        </div>
+
+        <!-- Painel: Campanha Cobertores -->
+        <div class="rpanel" id="rpanel-cobertores">
+          <div class="panel-head" style="margin-bottom:2px">
+            <div>
+              <h3 class="serif" id="cob-titulo" style="font-size:20px;color:var(--terra-800)">Campanha de Cobertores</h3>
+              <div class="sub" id="cob-sub">Carregando dados da planilha…</div>
+            </div>
+            <div class="actions">
+              <button onclick="loadCobertores()" style="all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--green-700);padding:6px 10px;border-radius:8px;background:var(--green-100)" onmouseover="this.style.background='#c8e0cc'" onmouseout="this.style.background='var(--green-100)'">↻ Atualizar</button>
+            </div>
+          </div>
+
+          <div class="cob-kpi-grid">
+            <div class="stat-pill">
+              <div class="lb">Arrecadado</div>
+              <div class="vl" id="cob-kpi-arrecadado">R$ 0,00</div>
+              <div class="sb" id="cob-kpi-arrecadado-sub">0 doações</div>
+            </div>
+            <div class="stat-pill">
+              <div class="lb">Meta da ação</div>
+              <div class="vl" id="cob-kpi-meta">R$ 0,00</div>
+              <div class="sb">Objetivo definido na planilha</div>
+            </div>
+            <div class="stat-pill">
+              <div class="lb">Falta atingir</div>
+              <div class="vl" id="cob-kpi-falta">R$ 0,00</div>
+              <div class="sb" id="cob-kpi-falta-sub">0% da meta atingida</div>
+            </div>
+            <div class="stat-pill">
+              <div class="lb">Doadores únicos</div>
+              <div class="vl" id="cob-kpi-qtd">0</div>
+              <div class="sb" id="cob-kpi-qtd-sub">0 doações recebidas</div>
+            </div>
+          </div>
+
+          <div style="margin-top:18px">
+            <div class="goal-bar-track"><div class="goal-bar-fill" id="cob-bar-fill" style="width:0%"></div></div>
+            <div class="goal-bar-label" id="cob-bar-label">0% da meta · R$ 0,00 de R$ 0,00</div>
+          </div>
+
+          <div class="panel" style="margin-top:18px">
+            <div class="panel-head">
+              <div>
+                <h3>Doações da campanha</h3>
+                <div class="sub" id="cob-tbl-sub">Carregando…</div>
+              </div>
+            </div>
+            <div id="cob-tbl-loading" class="loading-state"><div class="spinner"></div> Carregando doações…</div>
+            <div id="cob-tbl-wrap" style="display:none;overflow:auto;max-height:440px;border-radius:10px;border:1px solid var(--line)">
+              <table class="tbl">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Captador</th>
+                    <th>Doador</th>
+                    <th class="num">Valor</th>
+                  </tr>
+                </thead>
+                <tbody id="cob-tbody"></tbody>
+              </table>
+            </div>
+            <div id="cob-tbl-empty" style="display:none">
+              <div class="empty-state">
+                <svg class="i" viewBox="0 0 24 24"><path d="M4 7l4-3 2 2h4l2-2 4 3-2 4h-2v9H8v-9H6L4 7z"/></svg>
+                Nenhuma doação registrada ainda.
+              </div>
             </div>
           </div>
         </div>
@@ -1414,6 +1498,7 @@ function finInit() {
     dataInput.value = new Date().toISOString().split('T')[0];
   }
   loadFinanceiro();
+  loadCobertores();
 }
 
 async function loadFinanceiro() {
@@ -2136,6 +2221,109 @@ async function submitImport() {
   feedback.className   = errors ? 'fin-feedback err' : 'fin-feedback ok';
   setTimeout(() => { feedback.className = 'fin-feedback'; }, 5000);
   await loadFinanceiro();
+}
+
+/* ===========================================================
+   CAMPANHA COBERTORES — Google Sheets (só na área restrita)
+=========================================================== */
+const COBERTORES_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZkMgcmBlwtWlB3aMgjwdAoVQzeAuvPwbBTHzcZi8WT6PTd92KD1jYuV4NqwX7wA/pub?output=csv';
+
+function parseCobertores(text) {
+  const { data: allRows } = Papa.parse(text, { skipEmptyLines: true });
+
+  const headerIdx = allRows.findIndex(r => (r[2] || '').toString().trim() === 'Data');
+  const titleRow  = headerIdx > 0 ? allRows[headerIdx - 1] : [];
+
+  const titulo = (titleRow[2] || 'Campanha de Cobertores').toString().trim();
+  const meta   = parseValor((titleRow[8] || '').toString());
+
+  const startIdx = headerIdx >= 0 ? headerIdx + 1 : 0;
+  const doacoes = allRows.slice(startIdx)
+    .filter(r => r[2] && /^\d{2}\/\d{2}\/\d{4}$/.test(r[2].toString().trim()) && r[5])
+    .map(r => ({
+      data:     r[2].toString().trim(),
+      captador: (r[3] || '').toString().trim(),
+      doador:   (r[4] || '').toString().trim(),
+      valor:    parseValor((r[5] || '').toString())
+    }))
+    .filter(r => r.valor > 0 && r.doador);
+
+  const arrecadado = doacoes.reduce((s, r) => s + r.valor, 0);
+
+  return { titulo, meta, arrecadado, doacoes };
+}
+
+function renderCobertores({ titulo, meta, arrecadado, doacoes }) {
+  const falta   = Math.max(meta - arrecadado, 0);
+  const pctMeta = meta ? Math.min(Math.round(arrecadado / meta * 100), 100) : 0;
+  const doadoresUnicos = new Set(doacoes.map(d => d.doador.toLowerCase())).size;
+
+  document.getElementById('cob-titulo').textContent = titulo;
+  document.getElementById('cob-sub').textContent = doacoes.length + ' doação' + (doacoes.length !== 1 ? 'ões' : '') + ' registradas';
+
+  document.getElementById('cob-kpi-arrecadado').textContent     = fmtBR(arrecadado);
+  document.getElementById('cob-kpi-arrecadado-sub').textContent = doacoes.length + ' doação' + (doacoes.length !== 1 ? 'ões' : '');
+  document.getElementById('cob-kpi-meta').textContent           = fmtBR(meta);
+  document.getElementById('cob-kpi-falta').textContent          = fmtBR(falta);
+  document.getElementById('cob-kpi-falta-sub').textContent      = pctMeta + '% da meta atingida';
+  document.getElementById('cob-kpi-qtd').textContent             = fmtN(doadoresUnicos);
+  document.getElementById('cob-kpi-qtd-sub').textContent         = doacoes.length + ' doação' + (doacoes.length !== 1 ? 'ões' : '') + ' recebidas';
+
+  document.getElementById('cob-bar-fill').style.width  = pctMeta + '%';
+  document.getElementById('cob-bar-label').textContent = pctMeta + '% da meta · ' + fmtBR(arrecadado) + ' de ' + fmtBR(meta);
+
+  const loading = document.getElementById('cob-tbl-loading');
+  const wrap    = document.getElementById('cob-tbl-wrap');
+  const empty   = document.getElementById('cob-tbl-empty');
+  const tbody   = document.getElementById('cob-tbody');
+  const sub     = document.getElementById('cob-tbl-sub');
+  loading.style.display = 'none';
+
+  if (doacoes.length === 0) {
+    wrap.style.display  = 'none';
+    empty.style.display = '';
+    sub.textContent = 'Nenhuma doação ainda';
+    return;
+  }
+
+  const ordenadas = [...doacoes].sort((a, b) => {
+    const [da, ma, ya] = a.data.split('/').map(Number);
+    const [db, mb, yb] = b.data.split('/').map(Number);
+    return (yb * 10000 + mb * 100 + db) - (ya * 10000 + ma * 100 + da);
+  });
+
+  tbody.innerHTML = ordenadas.map(d =>
+    '<tr>' +
+      '<td style="white-space:nowrap">' + d.data + '</td>' +
+      '<td>' + (d.captador || '—') + '</td>' +
+      '<td>' + d.doador + '</td>' +
+      '<td class="num strong">' + fmtBR(d.valor) + '</td>' +
+    '</tr>'
+  ).join('');
+
+  wrap.style.display  = '';
+  empty.style.display = 'none';
+  sub.textContent = ordenadas.length + ' doação' + (ordenadas.length !== 1 ? 'ões' : '') + ' registradas';
+}
+
+async function loadCobertores() {
+  const loading = document.getElementById('cob-tbl-loading');
+  if (!loading) return;
+
+  loading.style.display = '';
+  document.getElementById('cob-tbl-wrap').style.display  = 'none';
+  document.getElementById('cob-tbl-empty').style.display = 'none';
+
+  try {
+    const resp = await fetch(COBERTORES_URL + '&_ts=' + Date.now(), { cache: 'no-store', credentials: 'omit', redirect: 'follow' });
+    if (!resp.ok) throw new Error('status ' + resp.status);
+    const text = await resp.text();
+    renderCobertores(parseCobertores(text));
+  } catch (e) {
+    loading.style.display = 'none';
+    document.getElementById('cob-tbl-empty').style.display = '';
+    document.getElementById('cob-sub').textContent = 'Erro ao carregar a planilha.';
+  }
 }
 
 /* ===========================================================
