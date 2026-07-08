@@ -2297,6 +2297,14 @@ async function submitImport() {
 =========================================================== */
 const COBERTORES_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZkMgcmBlwtWlB3aMgjwdAoVQzeAuvPwbBTHzcZi8WT6PTd92KD1jYuV4NqwX7wA/pub?output=csv';
 
+function findStatValue(allRows, label) {
+  for (const r of allRows) {
+    const idx = r.findIndex(c => (c || '').toString().trim() === label);
+    if (idx >= 0 && r[idx + 1] !== undefined) return r[idx + 1];
+  }
+  return '';
+}
+
 function parseCobertores(text) {
   const { data: allRows } = Papa.parse(text, { skipEmptyLines: true });
 
@@ -2304,7 +2312,7 @@ function parseCobertores(text) {
   const titleRow  = headerIdx > 0 ? allRows[headerIdx - 1] : [];
 
   const titulo = (titleRow[2] || 'Campanha de Cobertores').toString().trim();
-  const meta   = parseValor((titleRow[8] || '').toString());
+  const meta   = parseValor(findStatValue(allRows, 'Meta').toString());
 
   const startIdx = headerIdx >= 0 ? headerIdx + 1 : 0;
   const doacoes = allRows.slice(startIdx)
