@@ -719,13 +719,13 @@
             <div class="sb" id="ag-cob-kpi-arrecadado-sub">0 doações</div>
           </div>
           <div class="stat-pill">
-            <div class="lb">Meta da ação</div>
-            <div class="vl" id="ag-cob-kpi-meta">R$ 0,00</div>
+            <div class="lb">Meta em cobertores</div>
+            <div class="vl" id="ag-cob-kpi-meta">0 cobertores</div>
             <div class="sb">Objetivo definido na planilha</div>
           </div>
           <div class="stat-pill">
-            <div class="lb">Falta atingir</div>
-            <div class="vl" id="ag-cob-kpi-falta">R$ 0,00</div>
+            <div class="lb">Faltam cobertores</div>
+            <div class="vl" id="ag-cob-kpi-falta">0 cobertores</div>
             <div class="sb" id="ag-cob-kpi-falta-sub">0% da meta atingida</div>
           </div>
           <div class="stat-pill">
@@ -1063,13 +1063,13 @@
               <div class="sb" id="cob-kpi-arrecadado-sub">0 doações</div>
             </div>
             <div class="stat-pill">
-              <div class="lb">Meta da ação</div>
-              <div class="vl" id="cob-kpi-meta">R$ 0,00</div>
+              <div class="lb">Meta em cobertores</div>
+              <div class="vl" id="cob-kpi-meta">0 cobertores</div>
               <div class="sb">Objetivo definido na planilha</div>
             </div>
             <div class="stat-pill">
-              <div class="lb">Falta atingir</div>
-              <div class="vl" id="cob-kpi-falta">R$ 0,00</div>
+              <div class="lb">Faltam cobertores</div>
+              <div class="vl" id="cob-kpi-falta">0 cobertores</div>
               <div class="sb" id="cob-kpi-falta-sub">0% da meta atingida</div>
             </div>
             <div class="stat-pill">
@@ -2297,10 +2297,14 @@ async function submitImport() {
 =========================================================== */
 const COBERTORES_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZkMgcmBlwtWlB3aMgjwdAoVQzeAuvPwbBTHzcZi8WT6PTd92KD1jYuV4NqwX7wA/pub?output=csv';
 
-function findStatValue(allRows, label) {
+/* Procura uma linha de estatística pelo rótulo (ex.: "Meta") e retorna a
+   célula "offset" colunas à direita dele — assim continua funcionando
+   mesmo se novas doações deslocarem as linhas de estatística.
+   Layout da planilha: Rótulo | Valor (R$) | Qtde (cobertores) | % */
+function findStatCell(allRows, label, offset) {
   for (const r of allRows) {
     const idx = r.findIndex(c => (c || '').toString().trim() === label);
-    if (idx >= 0 && r[idx + 1] !== undefined) return r[idx + 1];
+    if (idx >= 0 && r[idx + offset] !== undefined) return r[idx + offset];
   }
   return '';
 }
@@ -2312,7 +2316,9 @@ function parseCobertores(text) {
   const titleRow  = headerIdx > 0 ? allRows[headerIdx - 1] : [];
 
   const titulo = (titleRow[2] || 'Campanha de Cobertores').toString().trim();
-  const meta   = parseValor(findStatValue(allRows, 'Meta').toString());
+  const meta      = parseValor(findStatCell(allRows, 'Meta', 1).toString());
+  const metaQtd   = parseInt(findStatCell(allRows, 'Meta', 2))  || 0;
+  const faltaQtd  = parseInt(findStatCell(allRows, 'Falta', 2)) || 0;
 
   const startIdx = headerIdx >= 0 ? headerIdx + 1 : 0;
   const doacoes = allRows.slice(startIdx)
@@ -2327,11 +2333,10 @@ function parseCobertores(text) {
 
   const arrecadado = doacoes.reduce((s, r) => s + r.valor, 0);
 
-  return { titulo, meta, arrecadado, doacoes };
+  return { titulo, meta, arrecadado, doacoes, metaQtd, faltaQtd };
 }
 
-function renderCobertores({ titulo, meta, arrecadado, doacoes }) {
-  const falta   = Math.max(meta - arrecadado, 0);
+function renderCobertores({ titulo, meta, arrecadado, doacoes, metaQtd, faltaQtd }) {
   const pctMeta = meta ? Math.min(Math.round(arrecadado / meta * 100), 100) : 0;
   const doadoresUnicos = new Set(doacoes.map(d => d.doador.toLowerCase())).size;
 
@@ -2340,8 +2345,8 @@ function renderCobertores({ titulo, meta, arrecadado, doacoes }) {
 
   document.getElementById('cob-kpi-arrecadado').textContent     = fmtBR(arrecadado);
   document.getElementById('cob-kpi-arrecadado-sub').textContent = doacoes.length + ' doação' + (doacoes.length !== 1 ? 'ões' : '');
-  document.getElementById('cob-kpi-meta').textContent           = fmtBR(meta);
-  document.getElementById('cob-kpi-falta').textContent          = fmtBR(falta);
+  document.getElementById('cob-kpi-meta').textContent           = fmtN(metaQtd) + ' cobertores';
+  document.getElementById('cob-kpi-falta').textContent          = fmtN(faltaQtd) + ' cobertores';
   document.getElementById('cob-kpi-falta-sub').textContent      = pctMeta + '% da meta atingida';
   document.getElementById('cob-kpi-qtd').textContent             = fmtN(doadoresUnicos);
   document.getElementById('cob-kpi-qtd-sub').textContent         = doacoes.length + ' doação' + (doacoes.length !== 1 ? 'ões' : '') + ' recebidas';
@@ -2407,8 +2412,7 @@ async function loadCobertores() {
 /* ===========================================================
    CAMPANHA COBERTORES — cópia pública (tela Campanha do Agasalho)
 =========================================================== */
-function renderCobertoresPublic({ titulo, meta, arrecadado, doacoes }) {
-  const falta   = Math.max(meta - arrecadado, 0);
+function renderCobertoresPublic({ titulo, meta, arrecadado, doacoes, metaQtd, faltaQtd }) {
   const pctMeta = meta ? Math.min(Math.round(arrecadado / meta * 100), 100) : 0;
   const doadoresUnicos = new Set(doacoes.map(d => d.doador.toLowerCase())).size;
 
@@ -2417,8 +2421,8 @@ function renderCobertoresPublic({ titulo, meta, arrecadado, doacoes }) {
 
   document.getElementById('ag-cob-kpi-arrecadado').textContent     = fmtBR(arrecadado);
   document.getElementById('ag-cob-kpi-arrecadado-sub').textContent = doacoes.length + ' doação' + (doacoes.length !== 1 ? 'ões' : '');
-  document.getElementById('ag-cob-kpi-meta').textContent           = fmtBR(meta);
-  document.getElementById('ag-cob-kpi-falta').textContent          = fmtBR(falta);
+  document.getElementById('ag-cob-kpi-meta').textContent           = fmtN(metaQtd) + ' cobertores';
+  document.getElementById('ag-cob-kpi-falta').textContent          = fmtN(faltaQtd) + ' cobertores';
   document.getElementById('ag-cob-kpi-falta-sub').textContent      = pctMeta + '% da meta atingida';
   document.getElementById('ag-cob-kpi-qtd').textContent             = fmtN(doadoresUnicos);
   document.getElementById('ag-cob-kpi-qtd-sub').textContent         = doacoes.length + ' doação' + (doacoes.length !== 1 ? 'ões' : '') + ' recebidas';
