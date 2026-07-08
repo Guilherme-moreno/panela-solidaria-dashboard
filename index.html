@@ -729,8 +729,8 @@
             <div class="sb" id="ag-cob-kpi-falta-sub">0% da meta atingida</div>
           </div>
           <div class="stat-pill">
-            <div class="lb">Doadores únicos</div>
-            <div class="vl" id="ag-cob-kpi-qtd">0</div>
+            <div class="lb">Cobertores arrecadados</div>
+            <div class="vl" id="ag-cob-kpi-qtd">0 cobertores</div>
             <div class="sb" id="ag-cob-kpi-qtd-sub">0 doações recebidas</div>
           </div>
         </div>
@@ -1073,8 +1073,8 @@
               <div class="sb" id="cob-kpi-falta-sub">0% da meta atingida</div>
             </div>
             <div class="stat-pill">
-              <div class="lb">Doadores únicos</div>
-              <div class="vl" id="cob-kpi-qtd">0</div>
+              <div class="lb">Cobertores arrecadados</div>
+              <div class="vl" id="cob-kpi-qtd">0 cobertores</div>
               <div class="sb" id="cob-kpi-qtd-sub">0 doações recebidas</div>
             </div>
           </div>
@@ -2316,9 +2316,10 @@ function parseCobertores(text) {
   const titleRow  = headerIdx > 0 ? allRows[headerIdx - 1] : [];
 
   const titulo = (titleRow[2] || 'Campanha de Cobertores').toString().trim();
-  const meta      = parseValor(findStatCell(allRows, 'Meta', 1).toString());
-  const metaQtd   = parseInt(findStatCell(allRows, 'Meta', 2))  || 0;
-  const faltaQtd  = parseInt(findStatCell(allRows, 'Falta', 2)) || 0;
+  const meta          = parseValor(findStatCell(allRows, 'Meta', 1).toString());
+  const metaQtd       = parseInt(findStatCell(allRows, 'Meta', 2))       || 0;
+  const faltaQtd      = parseInt(findStatCell(allRows, 'Falta', 2))      || 0;
+  const arrecadadoQtd = parseInt(findStatCell(allRows, 'Arrecadado', 2)) || 0;
 
   const startIdx = headerIdx >= 0 ? headerIdx + 1 : 0;
   const doacoes = allRows.slice(startIdx)
@@ -2333,12 +2334,11 @@ function parseCobertores(text) {
 
   const arrecadado = doacoes.reduce((s, r) => s + r.valor, 0);
 
-  return { titulo, meta, arrecadado, doacoes, metaQtd, faltaQtd };
+  return { titulo, meta, arrecadado, doacoes, metaQtd, faltaQtd, arrecadadoQtd };
 }
 
-function renderCobertores({ titulo, meta, arrecadado, doacoes, metaQtd, faltaQtd }) {
+function renderCobertores({ titulo, meta, arrecadado, doacoes, metaQtd, faltaQtd, arrecadadoQtd }) {
   const pctMeta = meta ? Math.min(Math.round(arrecadado / meta * 100), 100) : 0;
-  const doadoresUnicos = new Set(doacoes.map(d => d.doador.toLowerCase())).size;
 
   document.getElementById('cob-titulo').textContent = titulo;
   document.getElementById('cob-sub').textContent = doacoes.length + ' doação' + (doacoes.length !== 1 ? 'ões' : '') + ' registradas';
@@ -2348,7 +2348,7 @@ function renderCobertores({ titulo, meta, arrecadado, doacoes, metaQtd, faltaQtd
   document.getElementById('cob-kpi-meta').textContent           = fmtN(metaQtd) + ' cobertores';
   document.getElementById('cob-kpi-falta').textContent          = fmtN(faltaQtd) + ' cobertores';
   document.getElementById('cob-kpi-falta-sub').textContent      = pctMeta + '% da meta atingida';
-  document.getElementById('cob-kpi-qtd').textContent             = fmtN(doadoresUnicos);
+  document.getElementById('cob-kpi-qtd').textContent             = fmtN(arrecadadoQtd) + ' cobertores';
   document.getElementById('cob-kpi-qtd-sub').textContent         = doacoes.length + ' doação' + (doacoes.length !== 1 ? 'ões' : '') + ' recebidas';
 
   document.getElementById('cob-bar-fill').style.width  = pctMeta + '%';
@@ -2412,9 +2412,8 @@ async function loadCobertores() {
 /* ===========================================================
    CAMPANHA COBERTORES — cópia pública (tela Campanha do Agasalho)
 =========================================================== */
-function renderCobertoresPublic({ titulo, meta, arrecadado, doacoes, metaQtd, faltaQtd }) {
+function renderCobertoresPublic({ titulo, meta, arrecadado, doacoes, metaQtd, faltaQtd, arrecadadoQtd }) {
   const pctMeta = meta ? Math.min(Math.round(arrecadado / meta * 100), 100) : 0;
-  const doadoresUnicos = new Set(doacoes.map(d => d.doador.toLowerCase())).size;
 
   document.getElementById('ag-cob-titulo').textContent = titulo;
   document.getElementById('ag-cob-sub').textContent = doacoes.length + ' doação' + (doacoes.length !== 1 ? 'ões' : '') + ' registradas';
@@ -2424,7 +2423,7 @@ function renderCobertoresPublic({ titulo, meta, arrecadado, doacoes, metaQtd, fa
   document.getElementById('ag-cob-kpi-meta').textContent           = fmtN(metaQtd) + ' cobertores';
   document.getElementById('ag-cob-kpi-falta').textContent          = fmtN(faltaQtd) + ' cobertores';
   document.getElementById('ag-cob-kpi-falta-sub').textContent      = pctMeta + '% da meta atingida';
-  document.getElementById('ag-cob-kpi-qtd').textContent             = fmtN(doadoresUnicos);
+  document.getElementById('ag-cob-kpi-qtd').textContent             = fmtN(arrecadadoQtd) + ' cobertores';
   document.getElementById('ag-cob-kpi-qtd-sub').textContent         = doacoes.length + ' doação' + (doacoes.length !== 1 ? 'ões' : '') + ' recebidas';
 
   document.getElementById('ag-cob-bar-fill').style.width  = pctMeta + '%';
