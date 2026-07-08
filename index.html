@@ -2387,6 +2387,7 @@ async function loadCobertores() {
     const resp = await fetch(COBERTORES_URL + '&_ts=' + Date.now(), { cache: 'no-store', credentials: 'omit', redirect: 'follow' });
     if (!resp.ok) throw new Error('status ' + resp.status);
     const text = await resp.text();
+    _lastCobertoresCSV = text;
     renderCobertores(parseCobertores(text));
   } catch (e) {
     loading.style.display = 'none';
@@ -2463,6 +2464,7 @@ async function loadCobertoresPublic() {
     const resp = await fetch(COBERTORES_URL + '&_ts=' + Date.now(), { cache: 'no-store', credentials: 'omit', redirect: 'follow' });
     if (!resp.ok) throw new Error('status ' + resp.status);
     const text = await resp.text();
+    _lastCobertoresCSV = text;
     renderCobertoresPublic(parseCobertores(text));
   } catch (e) {
     loading.style.display = 'none';
@@ -2470,6 +2472,31 @@ async function loadCobertoresPublic() {
     document.getElementById('ag-cob-sub').textContent = 'Erro ao carregar a planilha.';
   }
 }
+
+/* Fica de olho na planilha de cobertores em segundo plano e, assim que
+   ela mudar, re-renderiza sozinha (área restrita + tela pública), sem
+   precisar clicar em "Atualizar". */
+let _lastCobertoresCSV = null;
+const COBERTORES_POLL_MS = 30000;
+
+async function pollCobertoresUpdate() {
+  if (document.hidden) return;
+  try {
+    const resp = await fetch(COBERTORES_URL + '&_ts=' + Date.now(), { cache: 'no-store', credentials: 'omit', redirect: 'follow' });
+    if (!resp.ok) return;
+    const text = await resp.text();
+    if (text === _lastCobertoresCSV) return;
+    _lastCobertoresCSV = text;
+    const parsed = parseCobertores(text);
+    if (document.getElementById('cob-tbl-loading'))    renderCobertores(parsed);
+    if (document.getElementById('ag-cob-tbl-loading')) renderCobertoresPublic(parsed);
+  } catch (e) {
+    // Falha silenciosa: mantém os últimos dados carregados e tenta de novo no próximo ciclo.
+  }
+}
+
+setInterval(pollCobertoresUpdate, COBERTORES_POLL_MS);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) pollCobertoresUpdate(); });
 
 /* ===========================================================
    ABAS DA ÁREA RESTRITA
