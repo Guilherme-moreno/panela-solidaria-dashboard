@@ -126,7 +126,10 @@
   .foot-meta{font-size:11.5px;color:#9bb18d;line-height:1.55}
 
   /* ---------- Main ---------- */
-  .main{padding:32px 40px 60px;max-width:1400px;width:100%}
+  /* min-width:0 evita que o conteúdo interno (tabelas, gráficos) force a
+     coluna do grid — e a página inteira — a ficar mais larga que a tela
+     no mobile, gerando rolagem horizontal indevida. */
+  .main{padding:32px 40px 60px;max-width:1400px;width:100%;min-width:0}
   @media (max-width: 900px){.main{padding:20px}}
 
   .topbar{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:28px;flex-wrap:wrap}
@@ -155,7 +158,7 @@
   @media (max-width: 520px){.kpi-grid{grid-template-columns:1fr}}
   .kpi{
     background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;
-    box-shadow:var(--shadow);position:relative;overflow:hidden;
+    box-shadow:var(--shadow);position:relative;overflow:hidden;min-width:0;
   }
   .kpi::after{
     content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
@@ -185,7 +188,7 @@
   @media (max-width: 1100px){.row{grid-template-columns:1fr}}
   .panel{
     background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 22px;
-    box-shadow:var(--shadow);position:relative;
+    box-shadow:var(--shadow);position:relative;min-width:0;
   }
   .panel::before{
     content:"";position:absolute;left:20px;right:20px;top:0;height:2px;
@@ -236,7 +239,7 @@
   @media (max-width:520px){.cat-grid{grid-template-columns:1fr}}
   .cat{
     background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px;
-    display:flex;align-items:center;gap:12px;
+    display:flex;align-items:center;gap:12px;min-width:0;
   }
   .cat .ic{width:42px;height:42px;border-radius:12px;background:#fff;display:grid;place-items:center;color:var(--terra-700);box-shadow:inset 0 0 0 1px var(--line)}
   .cat .nm{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em}
@@ -287,7 +290,7 @@
   .restricted-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:18px}
   @media (max-width:1100px){.restricted-grid{grid-template-columns:1fr 1fr}}
   @media (max-width:600px){.restricted-grid{grid-template-columns:1fr}}
-  .stat-pill{background:linear-gradient(180deg,var(--green-800),var(--green-900));color:#f4e7d2;border-radius:14px;padding:18px 20px;box-shadow:var(--shadow);position:relative;overflow:hidden;border:1px solid rgba(231,196,122,.18)}
+  .stat-pill{background:linear-gradient(180deg,var(--green-800),var(--green-900));color:#f4e7d2;border-radius:14px;padding:18px 20px;box-shadow:var(--shadow);position:relative;overflow:hidden;border:1px solid rgba(231,196,122,.18);min-width:0}
   .stat-pill::after{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:linear-gradient(90deg,transparent,var(--gold-soft),transparent)}
   .stat-pill .lb{font-size:11px;letter-spacing:.18em;text-transform:uppercase;opacity:.7}
   .stat-pill .vl{font-family:'Playfair Display',serif;font-weight:700;font-size:30px;margin-top:4px;color:var(--gold-soft)}
@@ -466,6 +469,9 @@
     /* RTabs: scrolláveis sem quebra */
     .rtabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
     .rtab  { flex-shrink: 0; padding: 9px 12px; font-size: 13px; }
+    /* Tabelas: mais compactas para caber sem rolagem lateral */
+    .tbl { font-size: 13px; }
+    .tbl th, .tbl td { padding: 9px 10px; }
     /* KPI stat-pills */
     .stat-pill .vl { font-size: 24px; }
     /* Financial form */
@@ -662,43 +668,6 @@
         <div class="topbar-right">
           <div class="meta-pill"><span class="dot"></span> Em andamento · meta jul 2026</div>
         </div>
-      </div>
-
-      <div class="kpi-grid">
-        <div class="kpi">
-          <div class="ico-bg"><svg class="i i-lg" viewBox="0 0 24 24"><path d="M4 7l4-3 2 2h4l2-2 4 3-2 4h-2v9H8v-9H6L4 7z"/></svg></div>
-          <div class="label">Total arrecadado</div>
-          <div class="value" id="kpi-ag-total">0<span class="unit">peças</span></div>
-          <span class="trend flat">Dados em breve</span>
-        </div>
-        <div class="kpi green">
-          <div class="ico-bg"><svg class="i i-lg" viewBox="0 0 24 24"><path d="M12 21s-7-4.5-7-11a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 6.5-7 11-7 11z" transform="translate(-2 0)"/></svg></div>
-          <div class="label">Famílias beneficiadas</div>
-          <div class="value" id="kpi-ag-familias">0</div>
-          <span class="trend flat">Dados em breve</span>
-        </div>
-        <div class="kpi gold">
-          <div class="ico-bg"><svg class="i i-lg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
-          <div class="label">Dias de campanha</div>
-          <div class="value" id="kpi-ag-dias">0</div>
-          <span class="trend flat">Encerra 31 jul</span>
-        </div>
-        <div class="kpi">
-          <div class="ico-bg"><svg class="i i-lg" viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg></div>
-          <div class="label">Pontos de coleta</div>
-          <div class="value" id="kpi-ag-pontos">0</div>
-          <span class="trend flat">A definir</span>
-        </div>
-      </div>
-
-      <div class="panel" style="margin-top:18px">
-        <div class="panel-head">
-          <div>
-            <h3>Arrecadação por categoria</h3>
-            <div class="sub">Dados serão atualizados conforme a campanha avançar</div>
-          </div>
-        </div>
-        <div style="color:var(--muted);font-size:14px;padding:24px 0;text-align:center">Nenhum dado disponível ainda.</div>
       </div>
 
       <div id="ag-cobertores" style="margin-top:18px">
